@@ -17,7 +17,7 @@ export function PlayingCard({ rank, suit, hidden = false, reducedMotion = false,
   const motionProps = {
     animate: { opacity: 1, rotate: 0, rotateY: hidden ? 180 : 0, x: 0, y: 0 },
     exit: reducedMotion ? { opacity: 1 } : { opacity: 0, scale: 0.92, transition: { delay: 0, duration: 0.32 }, y: -18 },
-    initial: reducedMotion ? false : { opacity: 0, rotate: -4, x: 72, y: -54 },
+    initial: reducedMotion ? false : { opacity: 0, rotate: -4, rotateY: hidden ? 180 : 0, x: 72, y: -54 },
     layout: !reducedMotion,
     transition: reducedMotion ? { duration: 0 } : { delay: dealOrder === undefined ? 0 : dealOrder * 0.2, duration: 0.42, ease: "easeOut" as const },
   };

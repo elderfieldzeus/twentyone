@@ -6,7 +6,8 @@
 - **Phase:** 3 of 5, Playable casino table
 - **Current card:** none
 - **Status:** Phase 3 is waiting for human review
-- **Last step:** The hidden-card face fix passed 36 unit tests, 12 browser tests, lint, and build
+- **Last step:** Dealer hits now appear one at a time before the final total and result
+- **Next step:** review Phase 3, then approve or reject it
 - **Next step:** review Phase 3, then approve or reject it
 - **Failing checks:** none
-- **Notes:** The table starts empty. Cards deal in order, flip with two faces, and leave together after each game. Stand appears before Hit.
+- **Notes:** Dealer hits appear one at a time. The result waits until dealer play finishes.

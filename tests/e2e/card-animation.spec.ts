@@ -31,6 +31,11 @@ test("deals the opening cards one at a time", async ({ page }) => {
     const lastOpacity = Number(await page.locator('[data-deal-order="3"]').evaluate((card) => getComputedStyle(card).opacity));
     return firstOpacity > lastOpacity;
   }).toBe(true);
+  const holeCard = page.locator('[data-deal-order="3"]');
+  await expect.poll(() => holeCard.evaluate((card) => {
+    const box = card.getBoundingClientRect();
+    return document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)?.className;
+  })).toBe("card-back-mark");
   await expect(page.getByRole("button", { name: "Hit" })).toBeEnabled();
 });
 
@@ -80,4 +85,23 @@ test("removes every finished card together before the next deal", async ({ page 
   await expect.poll(() => page.locator(".card").evaluateAll((cards) => cards.length > 0 && cards.every((card) => card.getAnimations().length > 0))).toBe(true);
   await expect(page.getByLabel("Blackjack table")).toHaveAttribute("data-game-state", "playing");
   await expect(page.locator("[data-deal-order]")).toHaveCount(4);
+});
+
+test("shows dealer hits one at a time before the result", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/");
+  await page.waitForTimeout(100);
+  await page.evaluate(() => { Math.random = () => 0.01; });
+  await page.getByRole("button", { name: "Deal a hand" }).click();
+  await page.getByRole("button", { name: "Stand" }).click();
+
+  const dealerCards = page.getByLabel("Dealer cards").getByRole("img");
+  await expect(page.getByLabel("Blackjack table")).toHaveAttribute("data-dealer-state", "playing");
+  await expect(dealerCards).toHaveCount(2);
+  await expect(page.getByRole("status")).toHaveCount(0);
+  await expect(dealerCards).toHaveCount(3);
+  await expect(dealerCards).toHaveCount(4);
+  await expect(page.getByLabel("Blackjack table")).toHaveAttribute("data-dealer-state", "done");
+  await expect(page.getByRole("heading", { name: "Dealer · 23" })).toBeVisible();
+  await expect(page.getByRole("status")).toBeVisible();
 });
