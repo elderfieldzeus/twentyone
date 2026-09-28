@@ -23,10 +23,12 @@ test("deals a hand and enables only valid controls", async ({ page }) => {
 test("stands and reveals the completed dealer hand", async ({ page }) => {
   await page.getByRole("button", { name: "Deal a hand" }).click();
   await expect(page.getByLabel("Hidden card")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Dealer · 10" })).toBeVisible();
 
   await page.getByRole("button", { name: "Stand" }).click();
 
   await expect(page.getByLabel("Hidden card")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: /Dealer · \d+/ })).toBeVisible();
   await expect(page.getByRole("status")).toContainText(/Win|Loss|Push|Blackjack/);
 });
 

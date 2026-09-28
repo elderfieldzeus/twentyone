@@ -31,15 +31,15 @@ export function GameTable() {
     if (transitionTimer.current !== null) window.clearTimeout(transitionTimer.current);
   }, []);
 
-  function startTransition() {
+  function startTransition(duration = 450) {
     if (reducedMotion) return;
     setTransitioning(true);
     if (transitionTimer.current !== null) window.clearTimeout(transitionTimer.current);
-    transitionTimer.current = window.setTimeout(() => setTransitioning(false), 450);
+    transitionTimer.current = window.setTimeout(() => setTransitioning(false), duration);
   }
 
   function deal() {
-    startTransition();
+    startTransition(1100);
     setGame(createGame(createShoe(defaultRules.deckCount), defaultRules));
   }
 
@@ -52,17 +52,20 @@ export function GameTable() {
 
   const actions = game ? availableActions(game) : [];
   const playerHand = game?.playerHands[game.activeHandIndex] ?? game?.playerHands[0];
+  const isOpeningDeal = game?.playerHands.length === 1 && game.playerHands[0]?.cards.length === 2;
+  const visibleDealerCards = game?.dealer.holeRevealed ? game.dealer.cards : game?.dealer.cards.slice(0, 1);
+  const dealerTotal = visibleDealerCards?.length ? scoreHand(visibleDealerCards).total : null;
 
   return (
     <section id="table" className="casino-table" aria-label="Blackjack table" data-motion={reducedMotion ? "reduced" : "standard"}>
       <div className="table-rim" aria-hidden="true" />
       <div className="table-content">
         <section className="seat dealer-seat" aria-labelledby="dealer-title">
-          <div className="seat-heading"><p className="eyebrow">House</p><h1 id="dealer-title">Dealer</h1></div>
+          <div className="seat-heading"><p className="eyebrow">House</p><h1 id="dealer-title">Dealer{dealerTotal !== null ? ` · ${dealerTotal}` : ""}</h1></div>
           <div className="hand" aria-label="Dealer cards">
             <AnimatePresence mode="popLayout">
               {(game?.dealer.cards ?? []).map((card, index) => (
-                <PlayingCard key={card.id} rank={card.rank} suit={card.suit} hidden={index === 1 && !game?.dealer.holeRevealed} reducedMotion={reducedMotion} />
+                <PlayingCard key={card.id} rank={card.rank} suit={card.suit} hidden={index === 1 && !game?.dealer.holeRevealed} reducedMotion={reducedMotion} dealOrder={isOpeningDeal ? (index === 0 ? 1 : 3) : undefined} />
               ))}
               {!game && <PlayingCard key="sample-dealer-up" rank="A" suit="spades" reducedMotion={reducedMotion} />}
               {!game && <PlayingCard key="sample-dealer-hole" rank="7" suit="diamonds" hidden reducedMotion={reducedMotion} />}
@@ -83,7 +86,7 @@ export function GameTable() {
                 >
                   <div className="hand">
                     <AnimatePresence mode="popLayout">
-                      {hand.cards.map((card) => <PlayingCard key={card.id} rank={card.rank} suit={card.suit} reducedMotion={reducedMotion} />)}
+                      {hand.cards.map((card, cardIndex) => <PlayingCard key={card.id} rank={card.rank} suit={card.suit} reducedMotion={reducedMotion} dealOrder={isOpeningDeal ? cardIndex * 2 : undefined} />)}
                     </AnimatePresence>
                   </div>
                   {game.playerHands.length > 1 && <span className="hand-number">Hand {index + 1}</span>}
