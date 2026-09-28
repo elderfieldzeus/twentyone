@@ -51,7 +51,7 @@ test("removes nonessential movement in reduced-motion mode", async ({ page }) =>
   await expect.poll(() => page.locator(".card").evaluateAll((cards) => cards.every((card) => card.getAnimations().length === 0))).toBe(true);
 });
 
-test("keeps separate front and back faces during the dealer flip", async ({ page }) => {
+test("keeps the hole-card front out of the page until the dealer reveal", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.goto("/");
   await page.waitForTimeout(100);
@@ -63,12 +63,12 @@ test("keeps separate front and back faces during the dealer flip", async ({ page
     const box = card.getBoundingClientRect();
     return document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)?.className;
   })).toBe("card-back-mark");
-  await expect(holeCard.locator(".card-face-front")).toHaveCount(1);
+  await expect(holeCard.locator(".card-face-front")).toHaveCount(0);
   await expect(holeCard.locator(".card-face-back")).toHaveCount(1);
-  await expect(holeCard.locator(".card-face-front")).toHaveCSS("backface-visibility", "hidden");
 
   await page.getByRole("button", { name: "Stand" }).click();
   await expect(holeCard).toHaveAttribute("aria-label", /.+ of .+/);
+  await expect(holeCard.locator(".card-face-front")).toHaveCount(1);
   await expect(holeCard.locator(".card-face-back")).toHaveCount(1);
 });
 

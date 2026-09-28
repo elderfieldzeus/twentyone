@@ -9,6 +9,7 @@
 - Dealer-total browser check: the total excluded the hidden card until it flipped.
 - Flip browser check: the front and back faces stayed mounted through the rotation.
 - Hidden-card browser check: the card back received the center hit target before the flip.
+- Hole-card privacy check: the front face did not exist in the page before dealer reveal.
 - Reset browser check: all finished cards exited together before the next deal.
 - Empty-table browser check: the first load showed no cards.
 - Dealer-play browser check: each hit appeared separately before the total and result finished.

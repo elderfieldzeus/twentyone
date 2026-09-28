@@ -6,8 +6,8 @@
 - **Phase:** 3 of 5, Playable casino table
 - **Current card:** none
 - **Status:** Phase 3 is waiting for human review
-- **Last step:** Dealer hits now appear one at a time before the final total and result
+- **Last step:** The hole-card front no longer exists in the page before dealer reveal
 - **Next step:** review Phase 3, then approve or reject it
 - **Next step:** review Phase 3, then approve or reject it
 - **Failing checks:** none
-- **Notes:** Dealer hits appear one at a time. The result waits until dealer play finishes.
+- **Notes:** Only the covered card back exists before dealer reveal. Dealer hits appear one at a time.

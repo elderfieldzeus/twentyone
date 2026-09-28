@@ -26,10 +26,12 @@ export function PlayingCard({ rank, suit, hidden = false, reducedMotion = false,
   const red = suit === "diamonds" || suit === "hearts";
   return (
     <motion.div {...motionProps} aria-hidden={!isPresent || undefined} aria-label={isPresent ? (hidden ? "Hidden card" : `${rank === "A" ? "Ace" : rank} of ${suit}`) : undefined} className={`card ${red ? "card-red" : ""}`} data-deal-order={dealOrder} role={isPresent ? "img" : undefined}>
-      <span className="card-face card-face-front">
-        <span className="card-corner" aria-hidden="true"><strong>{rank}</strong><span>{symbol}</span></span>
-        <span className="card-suit" aria-hidden="true">{symbol}</span>
-      </span>
+      {!hidden && (
+        <span className="card-face card-face-front">
+          <span className="card-corner" aria-hidden="true"><strong>{rank}</strong><span>{symbol}</span></span>
+          <span className="card-suit" aria-hidden="true">{symbol}</span>
+        </span>
+      )}
       <span className="card-face card-face-back" aria-hidden="true"><span className="card-back-mark">ⅡⅩ</span></span>
     </motion.div>
   );
