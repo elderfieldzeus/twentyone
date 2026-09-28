@@ -4,9 +4,9 @@
      A fresh session, in any tool or model, should be able to continue from this file plus the current card. -->
 
 - **Phase:** 1 of 5, Tested blackjack engine
-- **Current card:** 1.2, Cards and shoe
+- **Current card:** 1.3, Hand scoring
 - **Status:** done
-- **Last step:** Card 1.2 passed review
-- **Next step:** commit card 1.2, then start card 1.3
+- **Last step:** Card 1.3 passed review
+- **Next step:** commit card 1.3, then start card 1.4
 - **Failing checks:** none
 - **Notes:** All seventeen approved card files exist. Work starts with the application foundation.
