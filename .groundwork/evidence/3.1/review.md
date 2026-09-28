@@ -1,10 +1,12 @@
 # Review evidence
 
-- `npm test`: 34 unit tests and 3 browser tests passed.
+- `npm run test:unit`: 36 unit tests passed.
+- `npx playwright test --config /tmp/twentyone-playwright.config.ts`: 15 browser tests passed against the running app.
 - `npm run lint`: passed with no warnings or errors.
 - `npm run build`: passed and generated the `/` route.
 - `git diff --check`: passed.
-- Desktop and 390-pixel mobile screenshots were inspected live.
-- Acceptance criteria: all five criteria verified.
+- Desktop and 390-pixel mobile views were inspected live.
+- Mobile cards kept the corner rank and center suit while hiding only the corner suit.
+- Acceptance criteria: all six criteria verified.
 - Lessons: no project lessons exist yet.
-- Caveats: the table shows sample cards until card 3.2 connects game state.
+- Caveats: none.

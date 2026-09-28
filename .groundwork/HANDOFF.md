@@ -5,9 +5,9 @@
 
 - **Phase:** 3 of 5, Playable casino table
 - **Current card:** none
-- **Status:** Phase 3 review found a mobile table-label issue
-- **Last step:** Card 3.4 passed review with a face-up hole-card fade
-- **Next step:** hide the small House label at the mobile breakpoint
+- **Status:** Phase 3 review found split-hand overflow
+- **Last step:** Card 3.1 passed review with the mobile card-face cleanup
+- **Next step:** define the split-hand carousel behavior for desktop and mobile
 - **Failing checks:** none
 - **Notes:** Only the covered card back exists before dealer reveal. Results wait for the dealer reveal and all dealer hits.
-- **Notes:** Only the covered card back exists before dealer reveal. The face appears face-up at zero opacity when reveal starts.
+- **Notes:** Keep the large center suit visible on mobile. Keep desktop cards unchanged.

@@ -62,6 +62,7 @@ button, a { font: inherit; } button { cursor: pointer; }
   .game-layout { grid-template-columns: 1fr; min-height: auto; padding-top: 14px; }
   .casino-table { min-height: 650px; border-width: 7px; border-radius: 46% 46% 20px 20px / 10% 10% 20px 20px; }
   .table-content { min-height: 636px; padding: 38px 16px 20px; } .analysis-panel { min-height: 360px; }
+  .card-corner span { display: none; }
   .card { width: 82px; height: 118px; } .hand { min-height: 122px; } .table-mark span { font-size: 11px; }
   .player-hands { gap: 4px; } .player-hand { padding: 6px 3px 4px; } .player-hands .card { width: 62px; height: 90px; margin-left: -12px; }
 }
