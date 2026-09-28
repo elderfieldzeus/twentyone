@@ -6,7 +6,7 @@
 - **Phase:** 3 of 5, Playable casino table
 - **Current card:** none
 - **Status:** Phase 3 is waiting for human review
-- **Last step:** The hole-card front no longer exists in the page before dealer reveal
+- **Last step:** Dealer hit cards now use one consistent stack motion without opening-deal delays
 - **Next step:** review Phase 3, then approve or reject it
 - **Next step:** review Phase 3, then approve or reject it
 - **Failing checks:** none

@@ -25,6 +25,7 @@ export function GameTable() {
   const [game, setGame] = useState<GameState | null>(null);
   const [clearing, setClearing] = useState(false);
   const [dealerPlaying, setDealerPlaying] = useState(false);
+  const [openingDeal, setOpeningDeal] = useState(false);
   const [visibleDealerCount, setVisibleDealerCount] = useState(2);
   const [transitioning, setTransitioning] = useState(false);
   const dealerTimers = useRef<number[]>([]);
@@ -36,11 +37,17 @@ export function GameTable() {
     dealerTimers.current.forEach((timer) => window.clearTimeout(timer));
   }, []);
 
-  function startTransition(duration = 450) {
-    if (reducedMotion) return;
+  function startTransition(duration = 450, onComplete?: () => void) {
+    if (reducedMotion) {
+      onComplete?.();
+      return;
+    }
     setTransitioning(true);
     if (transitionTimer.current !== null) window.clearTimeout(transitionTimer.current);
-    transitionTimer.current = window.setTimeout(() => setTransitioning(false), duration);
+    transitionTimer.current = window.setTimeout(() => {
+      setTransitioning(false);
+      onComplete?.();
+    }, duration);
   }
 
   function deal() {
@@ -48,7 +55,8 @@ export function GameTable() {
       setClearing(false);
       setDealerPlaying(false);
       setVisibleDealerCount(2);
-      startTransition(1100);
+      setOpeningDeal(true);
+      startTransition(1300, () => setOpeningDeal(false));
       setGame(createGame(createShoe(defaultRules.deckCount), defaultRules));
     };
 
@@ -88,7 +96,6 @@ export function GameTable() {
 
   const actions = game ? availableActions(game) : [];
   const playerHand = game?.playerHands[game.activeHandIndex] ?? game?.playerHands[0];
-  const isOpeningDeal = game?.playerHands.length === 1 && game.playerHands[0]?.cards.length === 2;
   const displayedDealerCards = game?.dealer.cards.slice(0, visibleDealerCount);
   const visibleDealerCards = game?.dealer.holeRevealed ? displayedDealerCards : displayedDealerCards?.slice(0, 1);
   const dealerTotal = visibleDealerCards?.length ? scoreHand(visibleDealerCards).total : null;
@@ -102,7 +109,7 @@ export function GameTable() {
           <div className="hand" aria-label="Dealer cards">
             <AnimatePresence mode="popLayout">
               {(game && !clearing ? game.dealer.cards.slice(0, visibleDealerCount) : []).map((card, index) => (
-                <PlayingCard key={card.id} rank={card.rank} suit={card.suit} hidden={index === 1 && !game?.dealer.holeRevealed} reducedMotion={reducedMotion} dealOrder={isOpeningDeal ? (index === 0 ? 1 : 3) : undefined} />
+                <PlayingCard key={card.id} rank={card.rank} suit={card.suit} hidden={index === 1 && !game?.dealer.holeRevealed} reducedMotion={reducedMotion} dealOrder={openingDeal ? (index === 0 ? 1 : 3) : undefined} />
               ))}
             </AnimatePresence>
           </div>
@@ -121,7 +128,7 @@ export function GameTable() {
                 >
                   <div className="hand">
                     <AnimatePresence mode="popLayout">
-                      {!clearing && hand.cards.map((card, cardIndex) => <PlayingCard key={card.id} rank={card.rank} suit={card.suit} reducedMotion={reducedMotion} dealOrder={isOpeningDeal ? cardIndex * 2 : undefined} />)}
+                      {!clearing && hand.cards.map((card, cardIndex) => <PlayingCard key={card.id} rank={card.rank} suit={card.suit} reducedMotion={reducedMotion} dealOrder={openingDeal ? cardIndex * 2 : undefined} />)}
                     </AnimatePresence>
                   </div>
                   {game.playerHands.length > 1 && <span className="hand-number">Hand {index + 1}</span>}

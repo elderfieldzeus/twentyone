@@ -32,10 +32,8 @@ test("deals the opening cards one at a time", async ({ page }) => {
     return firstOpacity > lastOpacity;
   }).toBe(true);
   const holeCard = page.locator('[data-deal-order="3"]');
-  await expect.poll(() => holeCard.evaluate((card) => {
-    const box = card.getBoundingClientRect();
-    return document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)?.className;
-  })).toBe("card-back-mark");
+  await expect.poll(() => holeCard.evaluate((card) => card.getAnimations().length > 0)).toBe(true);
+  await expect(holeCard.locator(".card-face-front")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Hit" })).toBeEnabled();
 });
 
@@ -98,6 +96,7 @@ test("shows dealer hits one at a time before the result", async ({ page }) => {
   const dealerCards = page.getByLabel("Dealer cards").getByRole("img");
   await expect(page.getByLabel("Blackjack table")).toHaveAttribute("data-dealer-state", "playing");
   await expect(dealerCards).toHaveCount(2);
+  await expect(page.getByLabel("Dealer cards").locator("[data-deal-order]")).toHaveCount(0);
   await expect(page.getByRole("status")).toHaveCount(0);
   await expect(dealerCards).toHaveCount(3);
   await expect(dealerCards).toHaveCount(4);
