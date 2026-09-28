@@ -56,7 +56,7 @@ export function GameTable() {
       setDealerPlaying(false);
       setVisibleDealerCount(2);
       setOpeningDeal(true);
-      startTransition(1300, () => setOpeningDeal(false));
+      startTransition(850, () => setOpeningDeal(false));
       setGame(createGame(createShoe(defaultRules.deckCount), defaultRules));
     };
 

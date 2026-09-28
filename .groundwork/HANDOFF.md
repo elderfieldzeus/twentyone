@@ -6,7 +6,7 @@
 - **Phase:** 3 of 5, Playable casino table
 - **Current card:** none
 - **Status:** Phase 3 is waiting for human review
-- **Last step:** Dealer hit cards now use one consistent stack motion without opening-deal delays
+- **Last step:** All four opening cards now use equal 140 ms gaps and equal travel times
 - **Next step:** review Phase 3, then approve or reject it
 - **Next step:** review Phase 3, then approve or reject it
 - **Failing checks:** none
