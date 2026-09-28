@@ -1,0 +1,18 @@
+{
+  "$schema": "./config.schema.json",
+  "version": "0.7.0",
+  "approvalMode": "per-phase",
+  "experience": "experienced",
+  "tokenBudget": 2000,
+  "guards": [
+    "no-ai-trailers"
+  ],
+  "commitFormat": "[{id}] {title}",
+  "commands": {
+    "install": "npm install",
+    "test": "npm test",
+    "lint": "npm run lint",
+    "build": "npm run build",
+    "run": "npm run dev"
+  }
+}

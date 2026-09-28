@@ -1,0 +1,13 @@
+# Groundwork: same line endings on every OS
+.groundwork/** text eol=lf
+AGENTS.md text eol=lf
+CLAUDE.md text eol=lf
+.claude/** text eol=lf
+.opencode/** text eol=lf
+
+# Evidence images are binary: git must never rewrite their bytes
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.gif binary

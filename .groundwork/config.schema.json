@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Groundwork config",
+  "type": "object",
+  "required": [
+    "approvalMode",
+    "tokenBudget",
+    "commands"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "modelHint": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "object", "additionalProperties": { "type": "string" } }
+      ]
+    }
+  },
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "version": {
+      "description": "The Groundwork version that installed or last upgraded this project's .groundwork/ files. Written by `groundwork init` and `groundwork upgrade`; `groundwork doctor` compares it with the CLI.",
+      "type": "string"
+    },
+    "approvalMode": {
+      "description": "per-card: the human approves every card before it is committed. per-phase: cards commit after review passes, and the human approves the phase as a whole.",
+      "enum": [
+        "per-card",
+        "per-phase"
+      ]
+    },
+    "experience": {
+      "description": "How much the agent explains. new: one sentence per step, How to check at every approval stop, a labeled recommendation for stack choices. experienced: terse, a short approval summary, options only unless asked. Read fresh each time, so it can change mid-project.",
+      "enum": [
+        "new",
+        "experienced"
+      ],
+      "default": "new"
+    },
+    "tokenBudget": {
+      "description": "Maximum estimated tokens for files loaded in every session (AGENTS.md plus always-on adapter files). Checked by `groundwork doctor`.",
+      "type": "integer",
+      "minimum": 500
+    },
+    "guards": {
+      "description": "Guards to run before shell commands and file writes, by file name in .groundwork/guards/ (without .mjs). Empty means none run.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "models": {
+      "description": "Optional model per role, used only by adapters (the core ignores it). A value is one model name for every tool, or an object with one name per adapter (keyed by the adapter's name, as in `groundwork adapter add`), since each tool names models its own way. Leave a role out to use the tool's default.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "planner": { "$ref": "#/$defs/modelHint" },
+        "tester": { "$ref": "#/$defs/modelHint" },
+        "implementer": { "$ref": "#/$defs/modelHint" },
+        "reviewer": { "$ref": "#/$defs/modelHint" }
+      }
+    },
+    "commitFormat": {
+      "description": "The first line of each card's commit. {id} is the card ID and {title} its title, e.g. \"feat: {title} ({id})\". Quick changes use \"quick\" as the ID. Default: \"[{id}] {title}\".",
+      "type": "string",
+      "default": "[{id}] {title}"
+    },
+    "commands": {
+      "description": "Shell commands the agents run. Leave a command empty if the project doesn't have it.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "install": {
+          "type": "string"
+        },
+        "test": {
+          "type": "string"
+        },
+        "lint": {
+          "type": "string"
+        },
+        "build": {
+          "type": "string"
+        },
+        "run": {
+          "description": "How to start the app so a person or an agent can use it, e.g. a local server. Roles use it to check a card in the running app; stop summaries use it for How to check.",
+          "type": "string"
+        }
+      }
+    }
+  }
+}
