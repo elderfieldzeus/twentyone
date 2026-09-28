@@ -10,3 +10,10 @@
 - **Calls:** results stay hidden until the vote closes (card 1.2).
 - **Lessons added:** L-004, write a behavior spec before UI animation.
 -->
+
+## Phase 1: Tested blackjack engine (2026-09-28)
+- **Shipped:** the app foundation, card and shoe state, hand scoring, and the game engine ([1.1](cards/1.1-app-foundation.md), [1.2](cards/1.2-cards-and-shoe.md), [1.3](cards/1.3-hand-scoring.md), [1.4](cards/1.4-game-state-engine.md)).
+- **Try it:** run `npm test` to run 21 unit tests and one browser test.
+- **Decisions:** App Router, Tailwind CSS, Motion, Vitest, Testing Library, and Playwright ([0001](decisions/0001-nextjs-router.md), [0002](decisions/0002-styling.md), [0003](decisions/0003-animation.md), [0004](decisions/0004-testing.md)).
+- **Calls:** use immutable state, stable card IDs, learning units, and pure game transitions.
+- **Lessons added:** none.

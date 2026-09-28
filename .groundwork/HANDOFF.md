@@ -3,11 +3,10 @@
 <!-- The current state, overwritten (not appended) at every role change and before stopping.
      A fresh session, in any tool or model, should be able to continue from this file plus the current card. -->
 
-- **Phase:** 1 of 5, Tested blackjack engine
+- **Phase:** 1 of 5 approved; Phase 2 is next
 - **Current card:** none
-- **Status:** Phase 1 waiting for human review
-- **Last step:** All four Phase 1 cards passed review
-- **Next step:** review Phase 1, then run `gw-approve` or reject a specific card
+- **Status:** Phase 1 approved
+- **Last step:** Human approved Phase 1 on 2026-09-28
+- **Next step:** run `gw-next` to start card 2.1, Stand and hit analysis
 - **Failing checks:** none
-- **Failing checks:** none
-- **Notes:** Phase 1 adds the app foundation, cards and shoe, hand scoring, and a pure game-state engine.
+- **Notes:** Phase 1 shipped with 21 unit tests and one browser test passing.
