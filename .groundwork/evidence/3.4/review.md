@@ -15,6 +15,8 @@
 - Dealer-play browser check: each hit appeared separately before the total and result finished.
 - Hole-card motion check: the covered card moved into place with no front face mounted.
 - Dealer-stack check: hit cards did not reuse opening-deal positions.
+- Visible-travel check: the covered hole card stayed opaque while it was still moving.
+- Result-timing check: outcomes stayed hidden through the reveal and dealer hits.
 
 The card transitions use layout motion for deal, hit, split, dealer draws, flips, and removal.
 Exiting cards leave the access tree during their visual removal.

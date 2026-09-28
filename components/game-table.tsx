@@ -77,16 +77,21 @@ export function GameTable() {
       const nextGame = applyAction(game, action);
       setGame(nextGame);
 
-      if (nextGame.phase === "complete" && nextGame.dealer.cards.length > 2 && !reducedMotion) {
+      if (nextGame.phase === "complete" && !reducedMotion) {
         setDealerPlaying(true);
         setVisibleDealerCount(2);
         dealerTimers.current.forEach((timer) => window.clearTimeout(timer));
-        dealerTimers.current = nextGame.dealer.cards.slice(2).map((_, index, cards) => window.setTimeout(() => {
-          setVisibleDealerCount(index + 3);
-          if (index === cards.length - 1) {
-            transitionTimer.current = window.setTimeout(() => setDealerPlaying(false), 450);
-          }
-        }, (index + 1) * 550));
+        const dealerHits = nextGame.dealer.cards.slice(2);
+        if (dealerHits.length === 0) {
+          transitionTimer.current = window.setTimeout(() => setDealerPlaying(false), 450);
+        } else {
+          dealerTimers.current = dealerHits.map((_, index, cards) => window.setTimeout(() => {
+            setVisibleDealerCount(index + 3);
+            if (index === cards.length - 1) {
+              transitionTimer.current = window.setTimeout(() => setDealerPlaying(false), 450);
+            }
+          }, (index + 1) * 550));
+        }
       } else {
         setVisibleDealerCount(nextGame.dealer.cards.length);
         setDealerPlaying(false);

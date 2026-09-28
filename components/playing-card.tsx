@@ -15,11 +15,11 @@ const suitSymbols = { clubs: "♣", diamonds: "♦", hearts: "♥", spades: "♠
 export function PlayingCard({ rank, suit, hidden = false, reducedMotion = false, dealOrder }: PlayingCardProps) {
   const isPresent = useIsPresent();
   const motionProps = {
-    animate: { opacity: 1, rotate: 0, rotateY: hidden ? 180 : 0, x: 0, y: 0 },
+    animate: { opacity: reducedMotion ? 1 : [0, 1, 1], rotate: 0, rotateY: hidden ? 180 : 0, x: 0, y: 0 },
     exit: reducedMotion ? { opacity: 1 } : { opacity: 0, scale: 0.92, transition: { delay: 0, duration: 0.32 }, y: -18 },
     initial: reducedMotion ? false : { opacity: 0, rotate: hidden ? 0 : -4, rotateY: hidden ? 180 : 0, x: 96, y: -68 },
     layout: !reducedMotion,
-    transition: reducedMotion ? { duration: 0 } : { delay: dealOrder === undefined ? 0 : dealOrder * 0.14, duration: 0.36, ease: "easeOut" as const },
+    transition: reducedMotion ? { duration: 0 } : { delay: dealOrder === undefined ? 0 : dealOrder * 0.14, duration: 0.36, ease: "easeOut" as const, times: [0, 0.15, 1] },
   };
 
   const symbol = suitSymbols[suit];

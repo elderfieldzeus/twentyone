@@ -33,6 +33,10 @@ test("deals the opening cards one at a time", async ({ page }) => {
   }).toBe(true);
   const holeCard = page.locator('[data-deal-order="3"]');
   await expect.poll(() => holeCard.evaluate((card) => card.getAnimations().length > 0)).toBe(true);
+  await expect.poll(
+    () => holeCard.evaluate((card) => Number(getComputedStyle(card).opacity) > 0.9 && getComputedStyle(card).transform !== "none"),
+    { intervals: [20], timeout: 1200 },
+  ).toBe(true);
   await expect(holeCard.locator(".card-face-front")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Hit" })).toBeEnabled();
 });
@@ -65,9 +69,13 @@ test("keeps the hole-card front out of the page until the dealer reveal", async 
   await expect(holeCard.locator(".card-face-back")).toHaveCount(1);
 
   await page.getByRole("button", { name: "Stand" }).click();
+  await expect(page.getByLabel("Blackjack table")).toHaveAttribute("data-dealer-state", "playing");
+  await expect(page.getByRole("status")).toHaveCount(0);
   await expect(holeCard).toHaveAttribute("aria-label", /.+ of .+/);
   await expect(holeCard.locator(".card-face-front")).toHaveCount(1);
   await expect(holeCard.locator(".card-face-back")).toHaveCount(1);
+  await expect(page.getByLabel("Blackjack table")).toHaveAttribute("data-dealer-state", "done");
+  await expect(page.getByRole("status")).toBeVisible();
 });
 
 test("removes every finished card together before the next deal", async ({ page }) => {
