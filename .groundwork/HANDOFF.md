@@ -5,9 +5,9 @@
 
 - **Phase:** 3 of 5, Playable casino table
 - **Current card:** none
-- **Status:** Phase 3 is waiting for human review
-- **Last step:** All cards become opaque at the start of travel so the complete slide stays visible
-- **Next step:** review Phase 3, then approve or reject it
-- **Next step:** review Phase 3, then approve or reject it
+- **Status:** Phase 3 review found a mobile table-label issue
+- **Last step:** Card 3.4 passed review with a face-up hole-card fade
+- **Next step:** hide the small House label at the mobile breakpoint
 - **Failing checks:** none
 - **Notes:** Only the covered card back exists before dealer reveal. Results wait for the dealer reveal and all dealer hits.
+- **Notes:** Only the covered card back exists before dealer reveal. The face appears face-up at zero opacity when reveal starts.

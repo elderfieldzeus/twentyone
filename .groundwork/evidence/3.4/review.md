@@ -1,6 +1,7 @@
 # Review evidence
 
-- `npm test`: 36 unit tests and 13 browser tests passed.
+- `npm run test:unit`: 36 unit tests passed.
+- `npx playwright test --config /tmp/twentyone-playwright.config.ts`: 14 browser tests passed against the running app.
 - `npm run lint`: passed with no errors.
 - `npm run build`: production build completed.
 - Standard-motion browser check: cards reported active movement and controls stayed locked during transitions.
@@ -17,6 +18,8 @@
 - Dealer-stack check: hit cards did not reuse opening-deal positions.
 - Visible-travel check: the covered hole card stayed opaque while it was still moving.
 - Result-timing check: outcomes stayed hidden through the reveal and dealer hits.
+- Hole-card fade check: the face started transparent and faded in without card rotation.
+- Responsive check: the fade passed at 375, 768, and 1440 pixels with no horizontal overflow.
 
 The card transitions use layout motion for deal, hit, split, dealer draws, flips, and removal.
 Exiting cards leave the access tree during their visual removal.

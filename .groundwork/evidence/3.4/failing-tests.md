@@ -11,3 +11,10 @@ The failures confirm that card motion, action locks, and reduced-motion behavior
 - `npm run test:e2e -- tests/e2e/card-animation.spec.ts`
 - Result: the opening-deal test failed before the revision.
 - Failure: no cards exposed a deal position, so the browser could not find a one-by-one sequence.
+
+## Hole-card fade revision
+
+- `npx playwright test --config /tmp/twentyone-playwright.config.ts tests/e2e/card-animation.spec.ts --grep "fades in the face-up"`
+- Result: 1 test failed.
+- Failure: the face opacity stayed at 1 during the reveal.
+- Browser sample: the card had a 3D rotation matrix during the reveal.

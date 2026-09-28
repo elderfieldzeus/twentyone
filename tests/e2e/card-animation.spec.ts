@@ -78,6 +78,25 @@ test("keeps the hole-card front out of the page until the dealer reveal", async 
   await expect(page.getByRole("status")).toBeVisible();
 });
 
+test("fades in the face-up hole card without deal or flip motion", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/");
+  await page.waitForTimeout(100);
+  await page.evaluate(() => { Math.random = () => 0.5; });
+  await page.getByRole("button", { name: "Deal a hand" }).click();
+  await expect(page.getByRole("button", { name: "Stand" })).toBeEnabled();
+
+  const holeCard = page.getByLabel("Dealer cards").locator(".card").nth(1);
+  await page.getByRole("button", { name: "Stand" }).click();
+  await expect(holeCard).toHaveAttribute("aria-label", /.+ of .+/);
+
+  const front = holeCard.locator(".card-face-front");
+  await expect(front).toHaveCount(1);
+  await expect.poll(() => front.evaluate((face) => Number(getComputedStyle(face).opacity))).toBeLessThan(1);
+  await expect(holeCard).toHaveCSS("transform", "none");
+  await expect(front).toHaveCSS("opacity", "1");
+});
+
 test("removes every finished card together before the next deal", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.goto("/");
