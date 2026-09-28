@@ -23,6 +23,7 @@ function getReducedMotion() {
 
 export function GameTable() {
   const [game, setGame] = useState<GameState | null>(null);
+  const [clearing, setClearing] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
   const transitionTimer = useRef<number | null>(null);
   const reducedMotion = useSyncExternalStore(subscribeToReducedMotion, getReducedMotion, () => false);
@@ -39,8 +40,21 @@ export function GameTable() {
   }
 
   function deal() {
-    startTransition(1100);
-    setGame(createGame(createShoe(defaultRules.deckCount), defaultRules));
+    const dealNextHand = () => {
+      setClearing(false);
+      startTransition(1100);
+      setGame(createGame(createShoe(defaultRules.deckCount), defaultRules));
+    };
+
+    if (game && !reducedMotion) {
+      setClearing(true);
+      setTransitioning(true);
+      if (transitionTimer.current !== null) window.clearTimeout(transitionTimer.current);
+      transitionTimer.current = window.setTimeout(dealNextHand, 360);
+      return;
+    }
+
+    dealNextHand();
   }
 
   function act(action: PlayerAction) {
@@ -57,18 +71,16 @@ export function GameTable() {
   const dealerTotal = visibleDealerCards?.length ? scoreHand(visibleDealerCards).total : null;
 
   return (
-    <section id="table" className="casino-table" aria-label="Blackjack table" data-motion={reducedMotion ? "reduced" : "standard"}>
+    <section id="table" className="casino-table" aria-label="Blackjack table" data-game-state={clearing ? "clearing" : game ? "playing" : "idle"} data-motion={reducedMotion ? "reduced" : "standard"}>
       <div className="table-rim" aria-hidden="true" />
       <div className="table-content">
         <section className="seat dealer-seat" aria-labelledby="dealer-title">
           <div className="seat-heading"><p className="eyebrow">House</p><h1 id="dealer-title">Dealer{dealerTotal !== null ? ` · ${dealerTotal}` : ""}</h1></div>
           <div className="hand" aria-label="Dealer cards">
             <AnimatePresence mode="popLayout">
-              {(game?.dealer.cards ?? []).map((card, index) => (
+              {(game && !clearing ? game.dealer.cards : []).map((card, index) => (
                 <PlayingCard key={card.id} rank={card.rank} suit={card.suit} hidden={index === 1 && !game?.dealer.holeRevealed} reducedMotion={reducedMotion} dealOrder={isOpeningDeal ? (index === 0 ? 1 : 3) : undefined} />
               ))}
-              {!game && <PlayingCard key="sample-dealer-up" rank="A" suit="spades" reducedMotion={reducedMotion} />}
-              {!game && <PlayingCard key="sample-dealer-hole" rank="7" suit="diamonds" hidden reducedMotion={reducedMotion} />}
             </AnimatePresence>
           </div>
         </section>
@@ -86,7 +98,7 @@ export function GameTable() {
                 >
                   <div className="hand">
                     <AnimatePresence mode="popLayout">
-                      {hand.cards.map((card, cardIndex) => <PlayingCard key={card.id} rank={card.rank} suit={card.suit} reducedMotion={reducedMotion} dealOrder={isOpeningDeal ? cardIndex * 2 : undefined} />)}
+                      {!clearing && hand.cards.map((card, cardIndex) => <PlayingCard key={card.id} rank={card.rank} suit={card.suit} reducedMotion={reducedMotion} dealOrder={isOpeningDeal ? cardIndex * 2 : undefined} />)}
                     </AnimatePresence>
                   </div>
                   {game.playerHands.length > 1 && <span className="hand-number">Hand {index + 1}</span>}
@@ -94,7 +106,7 @@ export function GameTable() {
                 </div>
               );
             })}
-            {!game && <div className="hand" aria-label="Player cards"><PlayingCard rank="10" suit="hearts" reducedMotion={reducedMotion} /><PlayingCard rank="6" suit="clubs" reducedMotion={reducedMotion} /></div>}
+            {!game && <div className="hand" aria-label="Player cards" />}
           </div>
           <div className="seat-heading">
             <p className="eyebrow">Player</p>
@@ -102,12 +114,14 @@ export function GameTable() {
           </div>
         </section>
         <div className="action-dock" aria-label="Game controls">
-          {!game || game.phase === "complete" ? (
+          {clearing ? (
+            <button className="deal-button" type="button" disabled>Clearing table</button>
+          ) : !game || game.phase === "complete" ? (
             <button className="deal-button" type="button" onClick={deal}>{game ? "Deal next hand" : "Deal a hand"}</button>
           ) : (
             <div className="action-buttons">
-              {actions.includes("hit") && <button type="button" disabled={transitioning} onClick={() => act("hit")}>Hit</button>}
               {actions.includes("stand") && <button type="button" disabled={transitioning} onClick={() => act("stand")}>Stand</button>}
+              {actions.includes("hit") && <button type="button" disabled={transitioning} onClick={() => act("hit")}>Hit</button>}
               {actions.includes("double") && <button type="button" disabled={transitioning} onClick={() => act("double")}>Double down</button>}
               {actions.includes("split") && <button type="button" disabled={transitioning} onClick={() => act("split")}>Split</button>}
             </div>

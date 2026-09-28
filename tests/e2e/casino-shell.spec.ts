@@ -9,7 +9,7 @@ test("shows an accessible casino table and desktop analysis area", async ({ page
 
   await expect(page.getByRole("heading", { name: "Dealer" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Your hand" })).toBeVisible();
-  await expect(page.getByLabel("Ace of spades")).toContainText("A");
+  await expect(table.getByRole("img")).toHaveCount(0);
   await expect(table).toBeVisible();
   await expect(analysis).toBeVisible();
 

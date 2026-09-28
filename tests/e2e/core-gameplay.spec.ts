@@ -13,6 +13,7 @@ test("deals a hand and enables only valid controls", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Hit" })).toBeEnabled();
   await expect(page.getByRole("button", { name: "Stand" })).toBeEnabled();
   await expect(page.getByRole("button", { name: "Double down" })).toBeEnabled();
+  await expect(page.locator(".action-buttons button")).toHaveText(["Stand", "Hit", "Double down"]);
   await expect(page.getByRole("button", { name: "Deal a hand" })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Hit" }).click();
