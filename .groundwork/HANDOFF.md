@@ -4,10 +4,9 @@
      A fresh session, in any tool or model, should be able to continue from this file plus the current card. -->
 
 - **Phase:** 3 of 5, Playable casino table
-- **Current card:** 3.1, Casino table shell
-- **Status:** done
-- **Last step:** Card 3.1 passed review
-- **Next step:** commit card 3.1, then start card 3.2
+- **Current card:** 3.3, Split hand play
+- **Status:** to do
+- **Last step:** Card 3.2 passed review with 34 unit tests and 6 browser tests
+- **Next step:** start card 3.3 with failing split-hand browser tests
 - **Failing checks:** none
-- **Failing checks:** none
-- **Notes:** Phase 3 starts with the visual table shell before game controls are connected.
+- **Notes:** Core deal, hit, stand, and double controls are connected to the game engine.
