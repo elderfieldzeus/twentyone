@@ -4,9 +4,10 @@
      A fresh session, in any tool or model, should be able to continue from this file plus the current card. -->
 
 - **Phase:** 1 of 5, Tested blackjack engine
-- **Current card:** 1.3, Hand scoring
-- **Status:** done
-- **Last step:** Card 1.3 passed review
-- **Next step:** commit card 1.3, then start card 1.4
+- **Current card:** none
+- **Status:** Phase 1 waiting for human review
+- **Last step:** All four Phase 1 cards passed review
+- **Next step:** review Phase 1, then run `gw-approve` or reject a specific card
 - **Failing checks:** none
-- **Notes:** All seventeen approved card files exist. Work starts with the application foundation.
+- **Failing checks:** none
+- **Notes:** Phase 1 adds the app foundation, cards and shoe, hand scoring, and a pure game-state engine.
