@@ -17,3 +17,10 @@
 - **Decisions:** App Router, Tailwind CSS, Motion, Vitest, Testing Library, and Playwright ([0001](decisions/0001-nextjs-router.md), [0002](decisions/0002-styling.md), [0003](decisions/0003-animation.md), [0004](decisions/0004-testing.md)).
 - **Calls:** use immutable state, stable card IDs, learning units, and pure game transitions.
 - **Lessons added:** none.
+
+## Phase 2: Exact move analysis (2026-09-28)
+- **Shipped:** exact stand, hit, double, split, resplit, and best-move evaluation ([2.1](cards/2.1-stand-and-hit-analysis.md), [2.2](cards/2.2-double-and-split-analysis.md), [2.3](cards/2.3-best-move-evaluation.md)).
+- **Try it:** run `npm test` to run 34 unit tests and one browser test.
+- **Decisions:** no new stack decisions.
+- **Calls:** optimize later hit choices, return `null` for invalid moves, and use a strict tolerance for tied moves.
+- **Lessons added:** none.

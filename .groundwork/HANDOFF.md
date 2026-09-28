@@ -3,12 +3,10 @@
 <!-- The current state, overwritten (not appended) at every role change and before stopping.
      A fresh session, in any tool or model, should be able to continue from this file plus the current card. -->
 
-- **Phase:** 2 of 5, Exact move analysis
+- **Phase:** 2 of 5 approved; Phase 3 is next
 - **Current card:** none
-- **Status:** Phase 2 waiting for human review
-- **Last step:** All three Phase 2 cards passed review
-- **Next step:** review Phase 2, then run `gw-approve` or reject a specific card
+- **Status:** Phase 2 approved
+- **Last step:** Human approved Phase 2 on 2026-09-28
+- **Next step:** run `gw-next` to start card 3.1, Casino table shell
 - **Failing checks:** none
-- **Failing checks:** none
-- **Failing checks:** none
-- **Notes:** Phase 2 adds exact analysis for every move, bounded caches, stable grades, and display formatting.
+- **Notes:** Phase 2 shipped exact analysis for all player actions with cached shared-shoe calculations.
