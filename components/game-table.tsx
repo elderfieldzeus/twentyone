@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { AnimatePresence } from "motion/react";
 
 import { createShoe } from "@/lib/blackjack/cards";
 import { applyAction, availableActions, createGame, defaultRules, type GameState, type PlayerAction } from "@/lib/blackjack/game";
@@ -10,31 +11,62 @@ import { PlayingCard } from "./playing-card";
 
 const resultLabels = { blackjack: "Blackjack", win: "Win", push: "Push", loss: "Loss" } as const;
 
+function subscribeToReducedMotion(onChange: () => void) {
+  const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+
+function getReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 export function GameTable() {
   const [game, setGame] = useState<GameState | null>(null);
+  const [transitioning, setTransitioning] = useState(false);
+  const transitionTimer = useRef<number | null>(null);
+  const reducedMotion = useSyncExternalStore(subscribeToReducedMotion, getReducedMotion, () => false);
+
+  useEffect(() => () => {
+    if (transitionTimer.current !== null) window.clearTimeout(transitionTimer.current);
+  }, []);
+
+  function startTransition() {
+    if (reducedMotion) return;
+    setTransitioning(true);
+    if (transitionTimer.current !== null) window.clearTimeout(transitionTimer.current);
+    transitionTimer.current = window.setTimeout(() => setTransitioning(false), 450);
+  }
 
   function deal() {
+    startTransition();
     setGame(createGame(createShoe(defaultRules.deckCount), defaultRules));
   }
 
   function act(action: PlayerAction) {
-    if (game) setGame(applyAction(game, action));
+    if (game && !transitioning) {
+      startTransition();
+      setGame(applyAction(game, action));
+    }
   }
 
   const actions = game ? availableActions(game) : [];
   const playerHand = game?.playerHands[game.activeHandIndex] ?? game?.playerHands[0];
 
   return (
-    <section id="table" className="casino-table" aria-label="Blackjack table">
+    <section id="table" className="casino-table" aria-label="Blackjack table" data-motion={reducedMotion ? "reduced" : "standard"}>
       <div className="table-rim" aria-hidden="true" />
       <div className="table-content">
         <section className="seat dealer-seat" aria-labelledby="dealer-title">
           <div className="seat-heading"><p className="eyebrow">House</p><h1 id="dealer-title">Dealer</h1></div>
           <div className="hand" aria-label="Dealer cards">
-            {(game?.dealer.cards ?? []).map((card, index) => (
-              <PlayingCard key={card.id} rank={card.rank} suit={card.suit} hidden={index === 1 && !game?.dealer.holeRevealed} />
-            ))}
-            {!game && <><PlayingCard rank="A" suit="spades" /><PlayingCard rank="7" suit="diamonds" hidden /></>}
+            <AnimatePresence mode="popLayout">
+              {(game?.dealer.cards ?? []).map((card, index) => (
+                <PlayingCard key={card.id} rank={card.rank} suit={card.suit} hidden={index === 1 && !game?.dealer.holeRevealed} reducedMotion={reducedMotion} />
+              ))}
+              {!game && <PlayingCard key="sample-dealer-up" rank="A" suit="spades" reducedMotion={reducedMotion} />}
+              {!game && <PlayingCard key="sample-dealer-hole" rank="7" suit="diamonds" hidden reducedMotion={reducedMotion} />}
+            </AnimatePresence>
           </div>
         </section>
         <div className="table-mark" aria-hidden="true"><span>Blackjack pays 3 to 2</span><b>Dealer stands on soft 17</b></div>
@@ -50,14 +82,16 @@ export function GameTable() {
                   key={`${hand.cards[0]?.id ?? "hand"}-${index}`}
                 >
                   <div className="hand">
-                    {hand.cards.map((card) => <PlayingCard key={card.id} rank={card.rank} suit={card.suit} />)}
+                    <AnimatePresence mode="popLayout">
+                      {hand.cards.map((card) => <PlayingCard key={card.id} rank={card.rank} suit={card.suit} reducedMotion={reducedMotion} />)}
+                    </AnimatePresence>
                   </div>
                   {game.playerHands.length > 1 && <span className="hand-number">Hand {index + 1}</span>}
                   {settlement && <p className={`hand-result result-${settlement.result}`} role="status">{resultLabels[settlement.result]}</p>}
                 </div>
               );
             })}
-            {!game && <div className="hand" aria-label="Player cards"><PlayingCard rank="10" suit="hearts" /><PlayingCard rank="6" suit="clubs" /></div>}
+            {!game && <div className="hand" aria-label="Player cards"><PlayingCard rank="10" suit="hearts" reducedMotion={reducedMotion} /><PlayingCard rank="6" suit="clubs" reducedMotion={reducedMotion} /></div>}
           </div>
           <div className="seat-heading">
             <p className="eyebrow">Player</p>
@@ -69,10 +103,10 @@ export function GameTable() {
             <button className="deal-button" type="button" onClick={deal}>{game ? "Deal next hand" : "Deal a hand"}</button>
           ) : (
             <div className="action-buttons">
-              {actions.includes("hit") && <button type="button" onClick={() => act("hit")}>Hit</button>}
-              {actions.includes("stand") && <button type="button" onClick={() => act("stand")}>Stand</button>}
-              {actions.includes("double") && <button type="button" onClick={() => act("double")}>Double down</button>}
-              {actions.includes("split") && <button type="button" onClick={() => act("split")}>Split</button>}
+              {actions.includes("hit") && <button type="button" disabled={transitioning} onClick={() => act("hit")}>Hit</button>}
+              {actions.includes("stand") && <button type="button" disabled={transitioning} onClick={() => act("stand")}>Stand</button>}
+              {actions.includes("double") && <button type="button" disabled={transitioning} onClick={() => act("double")}>Double down</button>}
+              {actions.includes("split") && <button type="button" disabled={transitioning} onClick={() => act("split")}>Split</button>}
             </div>
           )}
           <p>Practice table · No betting</p>

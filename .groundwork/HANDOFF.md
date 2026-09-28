@@ -4,9 +4,9 @@
      A fresh session, in any tool or model, should be able to continue from this file plus the current card. -->
 
 - **Phase:** 3 of 5, Playable casino table
-- **Current card:** 3.4, Card animation
-- **Status:** to do
-- **Last step:** Card 3.3 passed review with live split-hand verification
-- **Next step:** start card 3.4 with failing motion browser tests
+- **Current card:** none
+- **Status:** Phase 3 is waiting for human review
+- **Last step:** Card 3.4 passed review with standard and reduced-motion browser evidence
+- **Next step:** review Phase 3, then approve or reject it
 - **Failing checks:** none
-- **Notes:** Split hands show separately, identify the active hand, and support four hands.
+- **Notes:** Phase 3 includes the casino table, full hand controls, split-hand play, and accessible card motion.
