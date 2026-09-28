@@ -5,9 +5,10 @@
 
 - **Phase:** 3 of 5, Playable casino table
 - **Current card:** none
-- **Status:** Phase 3 review found split-hand overflow
-- **Last step:** Card 3.1 passed review with the mobile card-face cleanup
-- **Next step:** define the split-hand carousel behavior for desktop and mobile
+- **Status:** Phase 3 is waiting for human review
+- **Last step:** Card 3.3 passed review with responsive hand pages
+- **Next step:** review Phase 3, then approve or reject it
 - **Failing checks:** none
 - **Notes:** Only the covered card back exists before dealer reveal. Results wait for the dealer reveal and all dealer hits.
 - **Notes:** Keep the large center suit visible on mobile. Keep desktop cards unchanged.
+- **Notes:** Split hands show one per phone page and two per tablet or desktop page.

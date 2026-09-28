@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { AnimatePresence } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 
 import { createShoe } from "@/lib/blackjack/cards";
 import { applyAction, availableActions, createGame, defaultRules, type GameState, type PlayerAction } from "@/lib/blackjack/game";
@@ -21,16 +21,28 @@ function getReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+function subscribeToPhoneLayout(onChange: () => void) {
+  const query = window.matchMedia("(max-width: 599px)");
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+
+function getPhoneLayout() {
+  return window.matchMedia("(max-width: 599px)").matches;
+}
+
 export function GameTable() {
   const [game, setGame] = useState<GameState | null>(null);
   const [clearing, setClearing] = useState(false);
   const [dealerPlaying, setDealerPlaying] = useState(false);
   const [openingDeal, setOpeningDeal] = useState(false);
+  const [handPage, setHandPage] = useState(0);
   const [visibleDealerCount, setVisibleDealerCount] = useState(2);
   const [transitioning, setTransitioning] = useState(false);
   const dealerTimers = useRef<number[]>([]);
   const transitionTimer = useRef<number | null>(null);
   const reducedMotion = useSyncExternalStore(subscribeToReducedMotion, getReducedMotion, () => false);
+  const phoneLayout = useSyncExternalStore(subscribeToPhoneLayout, getPhoneLayout, () => false);
 
   useEffect(() => () => {
     if (transitionTimer.current !== null) window.clearTimeout(transitionTimer.current);
@@ -54,6 +66,7 @@ export function GameTable() {
     const dealNextHand = () => {
       setClearing(false);
       setDealerPlaying(false);
+      setHandPage(0);
       setVisibleDealerCount(2);
       setOpeningDeal(true);
       startTransition(850, () => setOpeningDeal(false));
@@ -76,6 +89,9 @@ export function GameTable() {
       startTransition();
       const nextGame = applyAction(game, action);
       setGame(nextGame);
+      if (nextGame.phase === "player") {
+        setHandPage(Math.floor(nextGame.activeHandIndex / (phoneLayout ? 1 : 2)));
+      }
 
       if (nextGame.phase === "complete" && !reducedMotion) {
         setDealerPlaying(true);
@@ -104,6 +120,17 @@ export function GameTable() {
   const displayedDealerCards = game?.dealer.cards.slice(0, visibleDealerCount);
   const visibleDealerCards = game?.dealer.holeRevealed ? displayedDealerCards : displayedDealerCards?.slice(0, 1);
   const dealerTotal = visibleDealerCards?.length ? scoreHand(visibleDealerCards).total : null;
+  const handsPerPage = phoneLayout ? 1 : 2;
+  const handCount = game?.playerHands.length ?? 0;
+  const handPageCount = Math.max(1, Math.ceil(handCount / handsPerPage));
+  const visibleHandPage = Math.min(handPage, handPageCount - 1);
+  const activeHandPage = Math.floor((game?.activeHandIndex ?? 0) / handsPerPage);
+  const viewingInactiveHands = game?.phase === "player" && visibleHandPage !== activeHandPage;
+  const firstVisibleHand = visibleHandPage * handsPerPage;
+  const lastVisibleHand = Math.min(firstVisibleHand + handsPerPage, handCount);
+  const handPageLabel = lastVisibleHand - firstVisibleHand === 1
+    ? `Hand ${firstVisibleHand + 1} of ${handCount}`
+    : `Hands ${firstVisibleHand + 1}-${lastVisibleHand} of ${handCount}`;
 
   return (
     <section id="table" className="casino-table" aria-label="Blackjack table" data-dealer-state={dealerPlaying ? "playing" : "done"} data-game-state={clearing ? "clearing" : game ? "playing" : "idle"} data-motion={reducedMotion ? "reduced" : "standard"}>
@@ -121,27 +148,47 @@ export function GameTable() {
         </section>
         <div className="table-mark" aria-hidden="true"><span>Blackjack pays 3 to 2</span><b>Dealer stands on soft 17</b></div>
         <section className="seat player-seat" aria-labelledby="player-title">
-          <div className="player-hands">
-            {game?.playerHands.map((hand, index) => {
-              const isActive = game.phase === "player" && index === game.activeHandIndex;
-              const settlement = game.phase === "complete" && !dealerPlaying ? game.settlements[index] : null;
-              return (
-                <div
-                  className={`player-hand${isActive ? " active-hand" : ""}`}
-                  aria-label={game.playerHands.length === 1 ? "Player cards" : `Player hand ${index + 1}${isActive ? ", active" : ""}`}
-                  key={`${hand.cards[0]?.id ?? "hand"}-${index}`}
-                >
-                  <div className="hand">
-                    <AnimatePresence mode="popLayout">
-                      {!clearing && hand.cards.map((card, cardIndex) => <PlayingCard key={card.id} rank={card.rank} suit={card.suit} reducedMotion={reducedMotion} dealOrder={openingDeal ? cardIndex * 2 : undefined} />)}
-                    </AnimatePresence>
+          <div className="hand-carousel">
+            <div className="player-hands-window">
+              <motion.div
+                animate={{ x: `-${visibleHandPage * 100}%` }}
+                className="player-hands-track"
+                initial={false}
+                transition={reducedMotion ? { duration: 0 } : { duration: 0.24, ease: "easeOut" }}
+              >
+                {game ? Array.from({ length: handPageCount }, (_, pageIndex) => (
+                  <div aria-hidden={pageIndex !== visibleHandPage || undefined} className="player-hands" key={`hand-page-${pageIndex}`}>
+                    {game.playerHands.slice(pageIndex * handsPerPage, (pageIndex + 1) * handsPerPage).map((hand, pageHandIndex) => {
+                      const index = pageIndex * handsPerPage + pageHandIndex;
+                      const isActive = game.phase === "player" && index === game.activeHandIndex;
+                      const settlement = game.phase === "complete" && !dealerPlaying ? game.settlements[index] : null;
+                      return (
+                        <div
+                          className={`player-hand${isActive ? " active-hand" : ""}`}
+                          aria-label={game.playerHands.length === 1 ? "Player cards" : `Player hand ${index + 1}${isActive ? ", active" : ""}`}
+                          key={`${hand.cards[0]?.id ?? "hand"}-${index}`}
+                        >
+                          <div className="hand">
+                            <AnimatePresence mode="popLayout">
+                              {!clearing && hand.cards.map((card, cardIndex) => <PlayingCard key={card.id} rank={card.rank} suit={card.suit} reducedMotion={reducedMotion} dealOrder={openingDeal ? cardIndex * 2 : undefined} />)}
+                            </AnimatePresence>
+                          </div>
+                          {game.playerHands.length > 1 && <span className="hand-number">Hand {index + 1}</span>}
+                          {settlement && <p className={`hand-result result-${settlement.result}`} role="status">{resultLabels[settlement.result]}</p>}
+                        </div>
+                      );
+                    })}
                   </div>
-                  {game.playerHands.length > 1 && <span className="hand-number">Hand {index + 1}</span>}
-                  {settlement && <p className={`hand-result result-${settlement.result}`} role="status">{resultLabels[settlement.result]}</p>}
-                </div>
-              );
-            })}
-            {!game && <div className="hand" aria-label="Player cards" />}
+                )) : <div className="player-hands"><div className="hand" aria-label="Player cards" /></div>}
+              </motion.div>
+            </div>
+            {handCount > handsPerPage && (
+              <nav aria-label="Player hand pages" className="hand-pagination">
+                <button aria-label="Previous player hands" disabled={visibleHandPage === 0} onClick={() => setHandPage(visibleHandPage - 1)} type="button">‹</button>
+                <span aria-live="polite">{handPageLabel}</span>
+                <button aria-label="Next player hands" disabled={visibleHandPage === handPageCount - 1} onClick={() => setHandPage(visibleHandPage + 1)} type="button">›</button>
+              </nav>
+            )}
           </div>
           <div className="seat-heading">
             <p className="eyebrow">Player</p>
@@ -155,6 +202,8 @@ export function GameTable() {
             <button className="deal-button" type="button" disabled>Dealer playing</button>
           ) : !game || game.phase === "complete" ? (
             <button className="deal-button" type="button" onClick={deal}>{game ? "Deal next hand" : "Deal a hand"}</button>
+          ) : viewingInactiveHands ? (
+            <div className="action-buttons"><button type="button" onClick={() => setHandPage(activeHandPage)}>Return to active hand</button></div>
           ) : (
             <div className="action-buttons">
               {actions.includes("stand") && <button type="button" disabled={transitioning} onClick={() => act("stand")}>Stand</button>}

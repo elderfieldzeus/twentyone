@@ -21,10 +21,18 @@ button, a { font: inherit; } button { cursor: pointer; }
 .seat-heading h1, .seat-heading h2 { font-size: 24px; }
 .eyebrow { margin: 0; color: #cfb36c; font-size: 10px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; }
 .hand { display: flex; min-height: 154px; justify-content: center; padding-left: 18px; }
-.player-hands { display: flex; max-width: 100%; align-items: flex-start; justify-content: center; gap: 16px; }
+.hand-carousel { display: grid; width: min(100%, 580px); justify-items: center; gap: 8px; }
+.player-hands-window { width: 100%; overflow: hidden; }
+.player-hands-track { display: flex; width: 100%; }
+.player-hands { display: flex; width: 100%; flex: 0 0 100%; align-items: flex-start; justify-content: center; gap: 16px; }
 .player-hand { position: relative; padding: 8px 10px 6px; border: 1px solid transparent; border-radius: 14px; text-align: center; transition: border-color 160ms ease, background 160ms ease; }
 .player-hand.active-hand { border-color: #e3c271; background: #082d20a8; box-shadow: 0 0 0 3px #e3c2711f; }
 .hand-number { display: inline-block; margin-top: 5px; color: #b9c9c1; font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.hand-pagination { display: flex; min-height: 30px; align-items: center; gap: 10px; }
+.hand-pagination button { display: grid; width: 36px; height: 36px; place-items: center; border: 1px solid #d9bb72; border-radius: 50%; background: #102d22d9; color: #f4dfaa; font-size: 20px; line-height: 1; }
+.hand-pagination button:hover:not(:disabled) { background: #1b4936; }
+.hand-pagination button:disabled { cursor: default; opacity: .35; }
+.hand-pagination span { min-width: 96px; color: #d9c68f; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-align: center; text-transform: uppercase; }
 .card { position: relative; width: 104px; height: 148px; margin-left: -18px; border-radius: 9px; color: #171b19; transform-style: preserve-3d; }
 .card-red { color: #a72828; }
 .card-face { position: absolute; inset: 0; overflow: hidden; border: 1px solid #d8d3c8; border-radius: inherit; backface-visibility: hidden; box-shadow: 0 9px 20px #00190f66; }
@@ -43,7 +51,7 @@ button, a { font: inherit; } button { cursor: pointer; }
 .action-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; }
 .action-buttons button { min-width: 104px; padding: 12px 18px; border: 1px solid #d9bb72; border-radius: 999px; background: #102d22d9; color: #f4dfaa; font-weight: 700; box-shadow: 0 7px 18px #001d1266; }
 .action-buttons button:disabled { cursor: wait; opacity: .55; }
-.action-buttons button:focus-visible, .deal-button:focus-visible, .icon-button:focus-visible { outline: 3px solid #f5d47e; outline-offset: 3px; }
+.action-buttons button:focus-visible, .deal-button:focus-visible, .hand-pagination button:focus-visible, .icon-button:focus-visible { outline: 3px solid #f5d47e; outline-offset: 3px; }
 .hand-result { margin: 9px 0 0; font-size: 12px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
 .result-win, .result-blackjack { color: #8de0b7; } .result-loss { color: #f0958d; } .result-push { color: #e8d496; }
 .action-dock p { margin: 0; color: #8caf9f; font-size: 10px; letter-spacing: .13em; text-transform: uppercase; }
@@ -62,6 +70,7 @@ button, a { font: inherit; } button { cursor: pointer; }
   .game-layout { grid-template-columns: 1fr; min-height: auto; padding-top: 14px; }
   .casino-table { min-height: 650px; border-width: 7px; border-radius: 46% 46% 20px 20px / 10% 10% 20px 20px; }
   .table-content { min-height: 636px; padding: 38px 16px 20px; } .analysis-panel { min-height: 360px; }
+  .hand-pagination button { width: 40px; height: 40px; }
   .card-corner span { display: none; }
   .card { width: 82px; height: 118px; } .hand { min-height: 122px; } .table-mark span { font-size: 11px; }
   .player-hands { gap: 4px; } .player-hand { padding: 6px 3px 4px; } .player-hands .card { width: 62px; height: 90px; margin-left: -12px; }
