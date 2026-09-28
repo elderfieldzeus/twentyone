@@ -54,6 +54,10 @@ test("keeps separate front and back faces during the dealer flip", async ({ page
   await page.getByRole("button", { name: "Deal a hand" }).click();
 
   const holeCard = page.getByLabel("Dealer cards").locator(".card").nth(1);
+  await expect.poll(() => holeCard.evaluate((card) => {
+    const box = card.getBoundingClientRect();
+    return document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)?.className;
+  })).toBe("card-back-mark");
   await expect(holeCard.locator(".card-face-front")).toHaveCount(1);
   await expect(holeCard.locator(".card-face-back")).toHaveCount(1);
   await expect(holeCard.locator(".card-face-front")).toHaveCSS("backface-visibility", "hidden");

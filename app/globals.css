@@ -25,9 +25,9 @@ button, a { font: inherit; } button { cursor: pointer; }
 .player-hand { position: relative; padding: 8px 10px 6px; border: 1px solid transparent; border-radius: 14px; text-align: center; transition: border-color 160ms ease, background 160ms ease; }
 .player-hand.active-hand { border-color: #e3c271; background: #082d20a8; box-shadow: 0 0 0 3px #e3c2711f; }
 .hand-number { display: inline-block; margin-top: 5px; color: #b9c9c1; font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
-.card { position: relative; width: 104px; height: 148px; margin-left: -18px; border-radius: 9px; color: #171b19; filter: drop-shadow(0 9px 10px #00190f66); transform-style: preserve-3d; }
+.card { position: relative; width: 104px; height: 148px; margin-left: -18px; border-radius: 9px; color: #171b19; transform-style: preserve-3d; }
 .card-red { color: #a72828; }
-.card-face { position: absolute; inset: 0; overflow: hidden; border: 1px solid #d8d3c8; border-radius: inherit; backface-visibility: hidden; }
+.card-face { position: absolute; inset: 0; overflow: hidden; border: 1px solid #d8d3c8; border-radius: inherit; backface-visibility: hidden; box-shadow: 0 9px 20px #00190f66; }
 .card-face-front { background: #fffdf7; }
 .card-corner { position: absolute; top: 9px; left: 10px; display: flex; flex-direction: column; align-items: center; font: 18px/1 Georgia, serif; }
 .card-corner span { margin-top: 3px; font-size: 16px; }
