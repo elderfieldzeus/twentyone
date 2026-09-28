@@ -4,10 +4,10 @@
      A fresh session, in any tool or model, should be able to continue from this file plus the current card. -->
 
 - **Phase:** 2 of 5, Exact move analysis
-- **Current card:** 2.1, Stand and hit analysis
+- **Current card:** 2.2, Double and split analysis
 - **Status:** done
-- **Last step:** Card 2.1 passed review
-- **Next step:** commit card 2.1, then start card 2.2
+- **Last step:** Card 2.2 passed review
+- **Next step:** commit card 2.2, then start card 2.3
 - **Failing checks:** none
 - **Failing checks:** none
 - **Notes:** Phase 2 starts with exact stand and hit outcome calculation.
