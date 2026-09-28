@@ -23,7 +23,6 @@ export function GameTable() {
 
   const actions = game ? availableActions(game) : [];
   const playerHand = game?.playerHands[game.activeHandIndex] ?? game?.playerHands[0];
-  const result = game?.phase === "complete" ? game.settlements[0] : null;
 
   return (
     <section id="table" className="casino-table" aria-label="Blackjack table">
@@ -40,14 +39,29 @@ export function GameTable() {
         </section>
         <div className="table-mark" aria-hidden="true"><span>Blackjack pays 3 to 2</span><b>Dealer stands on soft 17</b></div>
         <section className="seat player-seat" aria-labelledby="player-title">
-          <div className="hand" aria-label="Player cards">
-            {(playerHand?.cards ?? []).map((card) => <PlayingCard key={card.id} rank={card.rank} suit={card.suit} />)}
-            {!game && <><PlayingCard rank="10" suit="hearts" /><PlayingCard rank="6" suit="clubs" /></>}
+          <div className="player-hands">
+            {game?.playerHands.map((hand, index) => {
+              const isActive = game.phase === "player" && index === game.activeHandIndex;
+              const settlement = game.phase === "complete" ? game.settlements[index] : null;
+              return (
+                <div
+                  className={`player-hand${isActive ? " active-hand" : ""}`}
+                  aria-label={game.playerHands.length === 1 ? "Player cards" : `Player hand ${index + 1}${isActive ? ", active" : ""}`}
+                  key={`${hand.cards[0]?.id ?? "hand"}-${index}`}
+                >
+                  <div className="hand">
+                    {hand.cards.map((card) => <PlayingCard key={card.id} rank={card.rank} suit={card.suit} />)}
+                  </div>
+                  {game.playerHands.length > 1 && <span className="hand-number">Hand {index + 1}</span>}
+                  {settlement && <p className={`hand-result result-${settlement.result}`} role="status">{resultLabels[settlement.result]}</p>}
+                </div>
+              );
+            })}
+            {!game && <div className="hand" aria-label="Player cards"><PlayingCard rank="10" suit="hearts" /><PlayingCard rank="6" suit="clubs" /></div>}
           </div>
           <div className="seat-heading">
             <p className="eyebrow">Player</p>
             <h2 id="player-title">Your hand{playerHand ? ` · ${scoreHand(playerHand.cards, { fromSplit: playerHand.fromSplit }).total}` : ""}</h2>
-            {result && <p className={`hand-result result-${result.result}`} role="status">{resultLabels[result.result]}</p>}
           </div>
         </section>
         <div className="action-dock" aria-label="Game controls">
@@ -58,6 +72,7 @@ export function GameTable() {
               {actions.includes("hit") && <button type="button" onClick={() => act("hit")}>Hit</button>}
               {actions.includes("stand") && <button type="button" onClick={() => act("stand")}>Stand</button>}
               {actions.includes("double") && <button type="button" onClick={() => act("double")}>Double down</button>}
+              {actions.includes("split") && <button type="button" onClick={() => act("split")}>Split</button>}
             </div>
           )}
           <p>Practice table · No betting</p>

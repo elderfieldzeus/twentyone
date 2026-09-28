@@ -64,6 +64,30 @@ describe("game state", () => {
     expect(() => applyAction(game, "split")).toThrow("Action split is not available");
   });
 
+  it("supports repeated splits up to four hands", () => {
+    let game = createGame(shoe("10", "5", "J", "6", "Q", "K", "2", "3", "4", "7"), defaultRules);
+
+    game = applyAction(game, "split");
+    game = applyAction(game, "split");
+    game = applyAction(game, "stand");
+    game = applyAction(game, "stand");
+    game = applyAction(game, "split");
+
+    expect(game.playerHands).toHaveLength(4);
+    expect(availableActions(game)).not.toContain("split");
+  });
+
+  it("deals one card to split aces and follows the resplit option", () => {
+    const game = createGame(shoe("A", "10", "A", "7", "A", "5", "2", "3"), {
+      ...defaultRules,
+      resplitAces: true,
+    });
+    const split = applyAction(game, "split");
+
+    expect(availableActions(split)).toEqual(["split"]);
+    expect(split.playerHands[1].status).toBe("stood");
+  });
+
   it("draws the second dealer card after player hands when no hole card is used", () => {
     const game = createGame(shoe("10", "6", "8", "A"), { ...defaultRules, dealerHasHoleCard: false });
     const complete = applyAction(game, "stand");
