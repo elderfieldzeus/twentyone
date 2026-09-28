@@ -24,3 +24,10 @@
 - **Decisions:** no new stack decisions.
 - **Calls:** optimize later hit choices, return `null` for invalid moves, and use a strict tolerance for tied moves.
 - **Lessons added:** none.
+
+## Phase 3: Playable casino table (2026-09-28)
+- **Shipped:** a responsive casino table, complete hand controls, split-hand pages, and card motion ([3.1](cards/3.1-casino-table-shell.md), [3.2](cards/3.2-core-hand-controls.md), [3.3](cards/3.3-split-hand-play.md), [3.4](cards/3.4-card-animation.md)).
+- **Try it:** run `npm run dev`, open the printed URL, deal a hand, and use the available actions.
+- **Decisions:** no new stack decisions.
+- **Calls:** use semantic regions, stable browser fixtures, system motion settings, fixed hand pages, private hole-card values, and delayed results.
+- **Lessons added:** none.
