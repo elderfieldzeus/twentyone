@@ -26,11 +26,15 @@ const standCache = new Map<string, OutcomeProbabilities>();
 const hitCache = new Map<string, OutcomeProbabilities>();
 const splitDealerCache = new Map<string, SplitAnalysis>();
 const splitPathCache = new Map<string, SplitAnalysis>();
+const rankIndexes: Record<Card["rank"], number> = {
+  A: 0, "2": 1, "3": 2, "4": 3, "5": 4, "6": 5, "7": 6,
+  "8": 7, "9": 8, "10": 9, J: 10, Q: 11, K: 12,
+};
 
 function cardsKey(cards: readonly Card[]): string {
-  const counts = new Map<string, number>();
-  for (const card of cards) counts.set(card.rank, (counts.get(card.rank) ?? 0) + 1);
-  return [...counts.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([rank, count]) => `${rank}${count}`).join(",");
+  const counts = Array<number>(13).fill(0);
+  for (const card of cards) counts[rankIndexes[card.rank]] += 1;
+  return counts.join(",");
 }
 
 function inputKey(input: AnalysisInput): string {
@@ -45,13 +49,13 @@ function inputKey(input: AnalysisInput): string {
 }
 
 function save(cache: Map<string, OutcomeProbabilities>, key: string, value: OutcomeProbabilities): OutcomeProbabilities {
-  if (cache.size >= 50_000) cache.clear();
+  if (cache.size >= 1_000_000) cache.clear();
   cache.set(key, value);
   return value;
 }
 
 function saveSplit(cache: Map<string, SplitAnalysis>, key: string, value: SplitAnalysis): SplitAnalysis {
-  if (cache.size >= 50_000) cache.clear();
+  if (cache.size >= 1_000_000) cache.clear();
   cache.set(key, value);
   return value;
 }
@@ -71,13 +75,18 @@ function removeRank(cards: readonly Card[], rank: Card["rank"]): readonly Card[]
 }
 
 function choices(cards: readonly Card[]): Array<{ card: Card; cards: readonly Card[]; probability: number }> {
-  const groups = new Map<Card["rank"], Card[]>();
-  for (const card of cards) groups.set(card.rank, [...(groups.get(card.rank) ?? []), card]);
-  return [...groups.values()].map((group) => ({
-    card: group[0],
-    cards: removeRank(cards, group[0].rank),
-    probability: group.length / cards.length,
-  }));
+  const counts = Array<number>(13).fill(0);
+  const representatives: Array<Card | undefined> = Array(13).fill(undefined);
+  for (const card of cards) {
+    const index = rankIndexes[card.rank];
+    counts[index] += 1;
+    representatives[index] ??= card;
+  }
+  return representatives.flatMap((card, index) => card ? [{
+    card,
+    cards: removeRank(cards, card.rank),
+    probability: counts[index] / cards.length,
+  }] : []);
 }
 
 function terminal(playerCards: readonly Card[], dealerCards: readonly Card[], rules: TableRules, fromSplit: boolean): OutcomeProbabilities {
@@ -275,9 +284,7 @@ export function analyzeSplit(input: SplitAnalysisInput): SplitAnalysis | null {
   const handCount = input.currentHandCount ?? 1;
   if (!left || !right || input.playerCards.length !== 2 || left.value !== right.value) return null;
   if (handCount >= input.rules.maxSplitHands || input.shoe.cards.length < 2) return null;
-
   let result: SplitAnalysis = { hands: [], expectedValue: 0 };
-
   for (const leftChoice of choices(input.shoe.cards)) {
     for (const rightChoice of choices(leftChoice.cards)) {
       const probability = leftChoice.probability * rightChoice.probability;
@@ -286,13 +293,28 @@ export function analyzeSplit(input: SplitAnalysisInput): SplitAnalysis | null {
         { cards: [left, leftChoice.card], units: 1, splitAces },
         { cards: [right, rightChoice.card], units: 1, splitAces },
       ];
-      result = addSplit(
-        result,
-        bestSplitPath(hands, 0, input.dealerCards, rightChoice.cards, input.rules),
-        probability,
-      );
+      result = addSplit(result, bestSplitPath(hands, 0, input.dealerCards, rightChoice.cards, input.rules), probability);
     }
   }
+  return result;
+}
 
+export function analyzeSplitPartition(input: SplitAnalysisInput, partitionIndex: number, partitionCount: number): SplitAnalysis | null {
+  const [left, right] = input.playerCards;
+  const handCount = input.currentHandCount ?? 1;
+  if (!left || !right || input.playerCards.length !== 2 || left.value !== right.value) return null;
+  if (handCount >= input.rules.maxSplitHands || input.shoe.cards.length < 2) return null;
+  const leftChoices = choices(input.shoe.cards);
+  const start = Math.floor(leftChoices.length * partitionIndex / partitionCount);
+  const end = Math.floor(leftChoices.length * (partitionIndex + 1) / partitionCount);
+  let result: SplitAnalysis = { hands: [], expectedValue: 0 };
+  for (const leftChoice of leftChoices.slice(start, end)) {
+    for (const rightChoice of choices(leftChoice.cards)) {
+      const probability = leftChoice.probability * rightChoice.probability;
+      const splitAces = left.rank === "A";
+      const hands: SplitHand[] = [{ cards: [left, leftChoice.card], units: 1, splitAces }, { cards: [right, rightChoice.card], units: 1, splitAces }];
+      result = addSplit(result, bestSplitPath(hands, 0, input.dealerCards, rightChoice.cards, input.rules), probability);
+    }
+  }
   return result;
 }

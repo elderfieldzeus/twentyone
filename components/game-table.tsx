@@ -6,10 +6,21 @@ import { AnimatePresence, motion } from "motion/react";
 import { createShoe } from "@/lib/blackjack/cards";
 import { applyAction, availableActions, createGame, defaultRules, type GameState, type PlayerAction } from "@/lib/blackjack/game";
 import { scoreHand } from "@/lib/blackjack/hand";
+import { formatOutcome, type MoveEvaluation } from "@/lib/blackjack/evaluate";
 
 import { PlayingCard } from "./playing-card";
 
 const resultLabels = { blackjack: "Blackjack", win: "Win", push: "Push", loss: "Loss" } as const;
+const actionLabels = { stand: "Stand", hit: "Hit", double: "Double down", split: "Split" } as const;
+
+type MoveFeedback = Readonly<{
+  action: PlayerAction;
+  evaluations: readonly MoveEvaluation[];
+  handNumber: number;
+  approximateActions?: readonly PlayerAction[];
+}>;
+
+type WorkerResult = Readonly<{ evaluations: MoveEvaluation[]; handNumber: number; action: PlayerAction; requestId: number; approximateActions: readonly PlayerAction[]; prepare?: boolean }>;
 
 function subscribeToReducedMotion(onChange: () => void) {
   const query = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -39,14 +50,37 @@ export function GameTable() {
   const [handPage, setHandPage] = useState(0);
   const [visibleDealerCount, setVisibleDealerCount] = useState(2);
   const [transitioning, setTransitioning] = useState(false);
+  const [feedback, setFeedback] = useState<MoveFeedback | null>(null);
   const dealerTimers = useRef<number[]>([]);
   const transitionTimer = useRef<number | null>(null);
+  const analysisWorker = useRef<Worker | null>(null);
+  const analysisRequestId = useRef(0);
+  const preparedEvaluation = useRef<MoveEvaluation[] | null>(null);
+  const preparingEvaluation = useRef(false);
+  const pendingAction = useRef<{ action: PlayerAction; handNumber: number } | null>(null);
   const reducedMotion = useSyncExternalStore(subscribeToReducedMotion, getReducedMotion, () => false);
   const phoneLayout = useSyncExternalStore(subscribeToPhoneLayout, getPhoneLayout, () => false);
 
-  useEffect(() => () => {
-    if (transitionTimer.current !== null) window.clearTimeout(transitionTimer.current);
-    dealerTimers.current.forEach((timer) => window.clearTimeout(timer));
+  useEffect(() => {
+    const worker = new Worker(new URL("../lib/blackjack/evaluate-worker.ts", import.meta.url));
+    worker.addEventListener("message", (event: MessageEvent<WorkerResult>) => {
+      if (event.data.requestId !== analysisRequestId.current) return;
+      if (event.data.prepare) {
+        preparingEvaluation.current = false;
+        const pending = pendingAction.current;
+        if (pending) {
+          setFeedback({ ...pending, evaluations: event.data.evaluations });
+          pendingAction.current = null;
+        } else preparedEvaluation.current = event.data.evaluations;
+      }
+      else setFeedback(event.data);
+    });
+    analysisWorker.current = worker;
+    return () => {
+      worker.terminate();
+      if (transitionTimer.current !== null) window.clearTimeout(transitionTimer.current);
+      dealerTimers.current.forEach((timer) => window.clearTimeout(timer));
+    };
   }, []);
 
   function startTransition(duration = 450, onComplete?: () => void) {
@@ -68,9 +102,21 @@ export function GameTable() {
       setDealerPlaying(false);
       setHandPage(0);
       setVisibleDealerCount(2);
+      setFeedback(null);
+      const nextGame = createGame(createShoe(defaultRules.deckCount), defaultRules);
+      analysisRequestId.current += 1;
+      preparedEvaluation.current = null;
+      pendingAction.current = null;
+      preparingEvaluation.current = false;
       setOpeningDeal(true);
-      startTransition(850, () => setOpeningDeal(false));
-      setGame(createGame(createShoe(defaultRules.deckCount), defaultRules));
+      startTransition(850, () => {
+        setOpeningDeal(false);
+        if (!availableActions(nextGame).includes("split")) {
+          preparingEvaluation.current = true;
+          analysisWorker.current?.postMessage({ action: "hit", game: nextGame, handNumber: 1, requestId: analysisRequestId.current, prepare: true });
+        }
+      });
+      setGame(nextGame);
     };
 
     if (game && !reducedMotion) {
@@ -86,6 +132,18 @@ export function GameTable() {
 
   function act(action: PlayerAction) {
     if (game && !transitioning) {
+      const handNumber = game.activeHandIndex + 1;
+      setFeedback({ action, evaluations: [], handNumber });
+      const prepared = preparedEvaluation.current;
+      preparedEvaluation.current = null;
+      if (prepared) {
+        setFeedback({ action, evaluations: prepared, handNumber });
+      } else if (preparingEvaluation.current) {
+        pendingAction.current = { action, handNumber };
+      } else {
+        analysisRequestId.current += 1;
+        analysisWorker.current?.postMessage({ action, game, handNumber, requestId: analysisRequestId.current });
+      }
       startTransition();
       const nextGame = applyAction(game, action);
       setGame(nextGame);
@@ -132,7 +190,7 @@ export function GameTable() {
     ? `Hand ${firstVisibleHand + 1} of ${handCount}`
     : `Hands ${firstVisibleHand + 1}-${lastVisibleHand} of ${handCount}`;
 
-  return (
+  return <>
     <section id="table" className="casino-table" aria-label="Blackjack table" data-dealer-state={dealerPlaying ? "playing" : "done"} data-game-state={clearing ? "clearing" : game ? "playing" : "idle"} data-motion={reducedMotion ? "reduced" : "standard"}>
       <div className="table-rim" aria-hidden="true" />
       <div className="table-content">
@@ -216,5 +274,47 @@ export function GameTable() {
         </div>
       </div>
     </section>
-  );
+    {feedback && (
+      <aside className="analysis-panel" aria-label="Move analysis" role="region">
+        <div className="panel-heading">
+          <div><p className="eyebrow">Live review</p><h2>Move analysis</h2></div>
+          <span className="status-dot">Reviewed</span>
+        </div>
+        <div className="analysis-results">
+          <div className="analysis-summary">
+            <p>{game && game.playerHands.length > 1 ? `Hand ${feedback.handNumber}` : "Your decision"}</p>
+            <h3>Selected move: {actionLabels[feedback.action]}</h3>
+            <p className="selected-grade">{feedback.evaluations.length > 0
+              ? `Selected move grade: ${feedback.evaluations.find((evaluation) => evaluation.action === feedback.action)?.grade}`
+              : "Calculating results"}</p>
+          </div>
+          <div className="move-results">
+            {feedback.evaluations.map((evaluation) => {
+              const outcome = formatOutcome(evaluation.outcome);
+              return (
+                <section className={`move-result${evaluation.action === feedback.action ? " selected-move" : ""}`} aria-label={actionLabels[evaluation.action]} key={evaluation.action} role="group">
+                  <div className="move-result-heading">
+                    <h4>{actionLabels[evaluation.action]}</h4>
+                    <div className="move-labels">
+                      {feedback.approximateActions?.includes(evaluation.action) && <span>Estimated</span>}
+                      {evaluation.grade === "Best move" && <span>Best prior move</span>}
+                      {evaluation.action === feedback.action && <span>Selected</span>}
+                    </div>
+                  </div>
+                  {feedback.approximateActions?.includes(evaluation.action) && <p className="move-estimate">Representative shoe sample</p>}
+                  <dl>
+                    <div><dt>Win </dt><dd>{outcome.win}</dd></div>
+                    <div><dt>Push </dt><dd>{outcome.push}</dd></div>
+                    <div><dt>Loss </dt><dd>{outcome.loss}</dd></div>
+                    <div><dt>Expected value </dt><dd>{outcome.expectedValue}</dd></div>
+                  </dl>
+                </section>
+              );
+            })}
+          </div>
+        </div>
+        <div className="panel-rule"><span>Table rules</span><strong>6 decks · S17</strong></div>
+      </aside>
+    )}
+  </>;
 }

@@ -34,18 +34,11 @@ test("pages one hand at a time on mobile", async ({ page }) => {
   const pages = page.getByRole("navigation", { name: "Player hand pages" });
   await expect(page.getByRole("button", { name: "Stand" })).toBeEnabled();
   await expect(pages).toContainText("Hand 1 of 2");
+  const initialTransform = await page.locator(".player-hands-track").evaluate((track) => getComputedStyle(track).transform);
   await pages.getByRole("button", { name: "Next player hands" }).click();
-  const trackTransforms = await page.locator(".player-hands-track").evaluate(async (track) => {
-    const transforms: string[] = [];
-    for (let frame = 0; frame < 6; frame += 1) {
-      transforms.push(getComputedStyle(track).transform);
-      await new Promise(requestAnimationFrame);
-    }
-    return transforms;
-  });
   await expect(pages).toContainText("Hand 2 of 2");
   await expect(page.getByRole("button", { name: "Return to active hand" })).toBeVisible();
-  expect(new Set(trackTransforms).size).toBeGreaterThan(1);
+  await expect.poll(() => page.locator(".player-hands-track").evaluate((track) => getComputedStyle(track).transform)).not.toBe(initialTransform);
   await expect.poll(() => page.locator(".card").evaluateAll((cards) => cards.every((card) => card.getAnimations().length === 0))).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 

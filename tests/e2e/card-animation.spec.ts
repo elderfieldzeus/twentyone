@@ -87,12 +87,27 @@ test("fades in the face-up hole card without deal or flip motion", async ({ page
   await expect(page.getByRole("button", { name: "Stand" })).toBeEnabled();
 
   const holeCard = page.getByLabel("Dealer cards").locator(".card").nth(1);
+  await page.evaluate(() => {
+    const record = { minimumOpacity: 1, sawFront: false };
+    (window as typeof window & { holeCardFadeRecord: typeof record }).holeCardFadeRecord = record;
+    const dealerCards = document.querySelector('[aria-label="Dealer cards"]');
+    if (!dealerCards) throw new Error("Dealer cards are missing");
+    const observer = new MutationObserver(() => {
+      const front = dealerCards.querySelectorAll(".card")[1]?.querySelector(".card-face-front");
+      if (!front) return;
+      record.sawFront = true;
+      record.minimumOpacity = Math.min(record.minimumOpacity, Number(getComputedStyle(front).opacity));
+      observer.disconnect();
+    });
+    observer.observe(dealerCards, { childList: true, subtree: true });
+  });
   await page.getByRole("button", { name: "Stand" }).click();
   await expect(holeCard).toHaveAttribute("aria-label", /.+ of .+/);
 
   const front = holeCard.locator(".card-face-front");
   await expect(front).toHaveCount(1);
-  await expect.poll(() => front.evaluate((face) => Number(getComputedStyle(face).opacity))).toBeLessThan(1);
+  await expect.poll(() => page.evaluate(() => (window as typeof window & { holeCardFadeRecord: { sawFront: boolean } }).holeCardFadeRecord.sawFront)).toBe(true);
+  expect(await page.evaluate(() => (window as typeof window & { holeCardFadeRecord: { minimumOpacity: number } }).holeCardFadeRecord.minimumOpacity)).toBeLessThan(1);
   await expect(holeCard).toHaveCSS("transform", "none");
   await expect(front).toHaveCSS("opacity", "1");
 });

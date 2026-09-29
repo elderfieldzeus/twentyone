@@ -1,0 +1,24 @@
+Command: npm test
+Summary: 6 unit test files passed with 36 tests. 21 browser tests passed.
+
+Command: npm run lint
+Summary: ESLint passed with no errors.
+
+Command: npm run build
+Summary: Next.js production build passed.
+
+Live checks: tests/e2e/move-analysis.spec.ts
+Summary: 3 browser checks passed.
+The panel stayed hidden before play and showed the prior move data after play.
+The selected move used a visible text label.
+Hit feedback stayed visible without showing guidance for the next decision.
+Split feedback stayed linked to the hand that made the move.
+
+Review finding: The implementation uses an eight-rank sample of the shoe.
+The spec requires exact probabilities from the actual cards left in the shoe.
+
+Review finding: The interface does not show the calculated move grade.
+The spec requires `Best move` or `Not the best move` for the selected move.
+It also requires a clear label for the statistically best prior move.
+
+Lessons: LESSONS.md contains no project lessons to apply.

@@ -10,11 +10,6 @@ export default function Home() {
       </header>
       <div className="game-layout">
         <GameTable />
-        <aside className="analysis-panel" aria-label="Move analysis">
-          <div className="panel-heading"><div><p className="eyebrow">Live review</p><h2>Move analysis</h2></div><span className="status-dot">Ready</span></div>
-          <div className="analysis-empty"><span className="analysis-icon" aria-hidden="true">✦</span><h3>Play without hints</h3><p>Your probabilities appear here after every decision.</p></div>
-          <div className="panel-rule"><span>Table rules</span><strong>6 decks · S17</strong></div>
-        </aside>
       </div>
     </main>
   );

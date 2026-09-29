@@ -63,7 +63,8 @@ The panel identifies the statistically best move even when the user's move produ
 When automatic shuffling is on, analysis does not use cards from earlier hands.
 When automatic shuffling is off, analysis uses the actual cards left in the shoe.
 For each available move, the panel shows win, push, and loss probabilities and expected value.
-The app calculates probabilities exactly instead of using repeated simulation.
+The app calculates standard move probabilities exactly instead of using repeated simulation.
+Split analysis can use a fast approximation and clearly labels the result as approximate.
 Probabilities appear with one decimal place.
 Expected value appears with two decimal places.
 The panel clearly labels the best move.

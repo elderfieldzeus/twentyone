@@ -1,0 +1,10 @@
+Command: npx playwright test tests/e2e/move-analysis.spec.ts --grep "exact split feedback"
+Summary: 1 failed
+
+shows exact split feedback within the live-use limit
+
+Expected the Split result group in the Move analysis region to be visible.
+The exact result did not appear within 60,000 ms.
+The panel continued to show "Calculating exact results".
+
+Failure location: tests/e2e/move-analysis.spec.ts:54

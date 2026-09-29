@@ -1,0 +1,25 @@
+Command: npm test
+Summary: 6 unit test files passed with 36 tests. 22 browser tests passed in 56.1 seconds.
+
+Command: npm run lint
+Summary: ESLint passed with no errors.
+
+Command: npm run build
+Summary: Next.js production build passed.
+
+Live desktop checks: 1440 by 960 Chromium window
+Summary: All card checks passed.
+Selected Split feedback completed in 2.7 seconds.
+Selected Stand feedback on a splittable hand completed in 3.1 seconds.
+Hit, Stand, and Double down matched exact actual-shoe values.
+Only the Split row showed Estimated and Representative shoe sample.
+
+Live mobile checks: 390 by 844 Chromium window
+Summary: Selected Split feedback completed in 2.8 seconds.
+Selected Stand feedback on a splittable hand completed in 2.7 seconds.
+Both panels appeared below the table.
+Both panels showed exact standard rows and one labeled Split estimate.
+
+Spec and decision check: passed.
+Decision 0005 option D permits only the Split estimate.
+LESSONS.md contains no project lessons to apply.

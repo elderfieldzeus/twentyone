@@ -1,0 +1,27 @@
+Command: npm test
+Summary: 6 unit test files passed with 37 tests. 20 browser tests passed in 1.3 minutes.
+
+Command: npm run lint
+Summary: ESLint passed with no errors.
+
+Command: npm run build
+Summary: Next.js production build passed.
+
+Live checks: tests/e2e/move-analysis.spec.ts
+Summary: 2 browser checks passed.
+The panel stayed hidden before play.
+It showed each prior option with exact values from the supplied shoe.
+It showed the selected move, its grade, and the best prior move with text.
+Hit feedback stayed visible without guidance for the next decision.
+
+Live split check: deterministic six-deck split hand in Chromium
+Summary: The panel showed Hand 1 and Selected move: Split.
+It still showed Calculating exact results after 30 seconds.
+No probabilities, expected values, grade, or best prior move appeared.
+
+Performance check: full browser suite
+Summary: Normal deal checks increased from about 3 seconds to about 13 seconds.
+Exact standard analysis runs on the main page during the deal action.
+The page cannot respond while that calculation runs.
+
+Lessons: LESSONS.md contains no project lessons to apply.

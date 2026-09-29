@@ -1,0 +1,25 @@
+Command: npm test
+Summary: 6 unit test files passed with 36 tests. 21 browser tests passed in 54.4 seconds.
+
+Command: npm run lint
+Summary: ESLint passed with no errors.
+
+Command: npm run build
+Summary: Next.js production build passed.
+
+Live desktop check: 1440 by 960 Chromium window
+Summary: Standard feedback passed on a hand without Split.
+A splittable hand followed by Stand stayed on Calculating results after 15 seconds.
+The panel did not show the prior Hit, Stand, Double down, or Split results.
+
+Live mobile check: 390 by 844 Chromium window
+Summary: Selected Split feedback appeared in about 3 seconds.
+The panel appeared below the table.
+It showed Hand 1, the selected grade, every prior move, and the estimate label.
+
+Decision check: 0005 option D
+Summary: The Split request passes the sampled shoe to every move evaluator.
+Hit, Stand, and Double down values are approximate in this path.
+Decision 0005 requires standard moves to stay exact and only Split to use an approximation.
+
+Lessons: LESSONS.md contains no project lessons to apply.

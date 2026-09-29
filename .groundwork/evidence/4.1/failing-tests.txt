@@ -1,0 +1,17 @@
+Command: npx playwright test tests/e2e/move-analysis.spec.ts --config .playwright-existing.config.ts
+Summary: 3 failed
+
+The temporary config used the existing app server at http://127.0.0.1:3001.
+The normal test server could not start while that shared server held the Next.js lock.
+
+1) shows analysis only after a move and includes each prior option
+   Expected the Move analysis region to be visible after Hit.
+   The element was not found.
+
+2) keeps hit feedback visible without showing the next best move
+   Expected the Move analysis region to contain "Selected move: Hit".
+   The element was not found.
+
+3) keeps split feedback with the hand that made the move
+   Expected the Move analysis region to contain "Hand 1".
+   The element was not found.

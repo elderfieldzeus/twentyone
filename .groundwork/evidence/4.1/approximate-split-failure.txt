@@ -1,0 +1,10 @@
+Command: npx playwright test tests/e2e/move-analysis.spec.ts --grep "approximate split feedback"
+Summary: 1 failed
+
+shows labeled approximate split feedback within the live-use limit
+
+The panel linked the selected Split move to Hand 1.
+The Split result group did not appear within 60,000 ms.
+The missing group blocks checks for probabilities, expected value, grade, and approximation wording.
+
+Failure location: tests/e2e/move-analysis.spec.ts:55

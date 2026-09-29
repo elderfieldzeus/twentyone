@@ -1,0 +1,12 @@
+Command: npx playwright test tests/e2e/move-analysis.spec.ts --grep "mixed feedback"
+Summary: 2 failed
+
+Selecting Split:
+Expected exact Hit values: Win 6.9%, Push 0.3%, Loss 92.8%, Expected value -0.86.
+Received sampled Hit values: Win 0.0%, Push 0.0%, Loss 100.0%, Expected value -1.00.
+
+Selecting Stand:
+Expected Hit, Stand, Double down, and labeled approximate Split results within 15 seconds.
+The Split result group did not appear within 15,000 ms.
+
+Failures: tests/e2e/move-analysis.spec.ts:15 and tests/e2e/move-analysis.spec.ts:90.
