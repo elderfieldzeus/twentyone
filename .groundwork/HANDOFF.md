@@ -5,9 +5,9 @@
 
 - **Phase:** 4 of 5, Visible move guidance
 - **Current card:** none
-- **Status:** Card 4.2 passed review and is ready for the runner commit
-- **Last step:** Re-review passed all checks, live desktop and mobile verification, and decision 0002 compliance
-- **Next step:** commit card 4.2, then continue with the next eligible Phase 4 card
+- **Status:** Phase 4 is waiting for human review
+- **Last step:** Card 4.3 passed final review and all pending-grade boundaries
+- **Next step:** review Phase 4, then approve or reject it
 - **Failing checks:** none
 - **Notes:** Only the covered card back exists before dealer reveal. Results wait for the dealer reveal and all dealer hits.
 - **Notes:** Keep the large center suit visible on mobile. Keep desktop cards unchanged.
@@ -24,3 +24,9 @@
 - **Notes:** Applying options stores the prior session locally, clears the table, and prepares a new shoe.
 - **Notes:** Disabling hand shuffling keeps the remaining shoe between hands.
 - **Notes:** Another project owns port 3100. Validation used isolated port 3200 without changing project config.
+- **Notes:** Card 4.3 failing checks also ran against Twentyone on isolated port 3200.
+- **Notes:** Each split hand settlement counts as one completed hand. Blackjack counts as a win.
+- **Notes:** Table option changes archive and reset session progress.
+- **Notes:** Fast Hit then Stand records 2 decisions, 1 correct decision, and 50% accuracy.
+- **Notes:** A pending prior-hand grade updates stored progress exactly once and cannot restore old feedback after the next hand starts.
+- **Notes:** Reload recovers pending grades without feedback. Reset and Apply options settle pending grades into the archive before zeroing progress.

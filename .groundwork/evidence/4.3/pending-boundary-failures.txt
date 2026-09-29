@@ -1,0 +1,11 @@
+Command: npx playwright test tests/e2e/session-progress.spec.ts --grep "pending Stand grade" --config .playwright-3200.config.ts
+Summary: 3 failed
+
+The temporary config ran Twentyone on isolated port 3200.
+
+Reload expected 1 current decision but kept 0 after 15 seconds.
+Reset archived 1 session but stored 0 decisions instead of 1.
+Apply options archived 1 session but stored 0 decisions instead of 1.
+All three expected 0 correct decisions for the known Stand move.
+
+Failures: tests/e2e/session-progress.spec.ts:104, 121, and 140.

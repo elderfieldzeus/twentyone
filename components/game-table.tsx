@@ -22,6 +22,23 @@ type MoveFeedback = Readonly<{
 
 type WorkerResult = Readonly<{ evaluations: MoveEvaluation[]; handNumber: number; action: PlayerAction; requestId: number; approximateActions: readonly PlayerAction[]; prepare?: boolean }>;
 
+type SessionProgress = Readonly<{
+  hands: number;
+  wins: number;
+  losses: number;
+  pushes: number;
+  decisions: number;
+  correctDecisions: number;
+  pendingDecisions: readonly StoredPendingDecision[];
+}>;
+
+type StoredPendingDecision = Readonly<{ id: string; action: PlayerAction; game: GameState; handNumber: number }>;
+type PendingDecision = Readonly<{ action: PlayerAction; handNumber: number; actionId: number; handId: number; pendingId: string }>;
+
+const emptyProgress: SessionProgress = { hands: 0, wins: 0, losses: 0, pushes: 0, decisions: 0, correctDecisions: 0, pendingDecisions: [] };
+const progressStorageKey = "twentyone-session-progress";
+const archiveStorageKey = "twentyone-session-archive";
+
 function subscribeToReducedMotion(onChange: () => void) {
   const query = window.matchMedia("(prefers-reduced-motion: reduce)");
   query.addEventListener("change", onChange);
@@ -47,6 +64,9 @@ export function GameTable() {
   const [draftRules, setDraftRules] = useState<TableRules>(defaultRules);
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [archiveNotice, setArchiveNotice] = useState("");
+  const [progress, setProgress] = useState<SessionProgress>(emptyProgress);
+  const progressRef = useRef<SessionProgress>(emptyProgress);
+  const pendingBoundary = useRef<(() => void) | null>(null);
   const [game, setGame] = useState<GameState | null>(null);
   const [clearing, setClearing] = useState(false);
   const [dealerPlaying, setDealerPlaying] = useState(false);
@@ -59,34 +79,150 @@ export function GameTable() {
   const transitionTimer = useRef<number | null>(null);
   const analysisWorker = useRef<Worker | null>(null);
   const analysisRequestId = useRef(0);
-  const preparedEvaluation = useRef<MoveEvaluation[] | null>(null);
-  const preparingEvaluation = useRef(false);
-  const pendingAction = useRef<{ action: PlayerAction; handNumber: number } | null>(null);
+  const minimumAnalysisRequestId = useRef(0);
+  const activeHandId = useRef(0);
+  const latestActionId = useRef(0);
+  const actionRequests = useRef(new Map<number, PendingDecision>());
+  const prepareRequests = useRef(new Map<number, { handId: number; pending?: PendingDecision }>());
+  const preparedEvaluation = useRef<{ handId: number; evaluations: MoveEvaluation[] } | null>(null);
   const newShoe = useRef<ReturnType<typeof createShoe> | null>(null);
   const reducedMotion = useSyncExternalStore(subscribeToReducedMotion, getReducedMotion, () => false);
   const phoneLayout = useSyncExternalStore(subscribeToPhoneLayout, getPhoneLayout, () => false);
 
   useEffect(() => {
+    const storedProgress = window.localStorage.getItem(progressStorageKey);
+    const restored = storedProgress
+      ? { ...emptyProgress, ...(JSON.parse(storedProgress) as Partial<SessionProgress>) }
+      : emptyProgress;
+    progressRef.current = restored;
+    if (storedProgress) queueMicrotask(() => setProgress(restored));
+
+    function recordWorkerDecision(evaluations: readonly MoveEvaluation[], action: PlayerAction, pendingId: string) {
+      const selected = evaluations.find((evaluation) => evaluation.action === action);
+      if (!selected) return;
+      setProgress((current) => {
+        const nextProgress = {
+          ...current,
+          decisions: current.decisions + 1,
+          correctDecisions: current.correctDecisions + (selected.grade === "Best move" ? 1 : 0),
+          pendingDecisions: current.pendingDecisions.filter((pending) => pending.id !== pendingId),
+        };
+        progressRef.current = nextProgress;
+        window.localStorage.setItem(progressStorageKey, JSON.stringify(nextProgress));
+        if (nextProgress.pendingDecisions.length === 0 && pendingBoundary.current) {
+          const finish = pendingBoundary.current;
+          pendingBoundary.current = null;
+          queueMicrotask(finish);
+        }
+        return nextProgress;
+      });
+    }
+
     const worker = new Worker(new URL("../lib/blackjack/evaluate-worker.ts", import.meta.url));
     worker.addEventListener("message", (event: MessageEvent<WorkerResult>) => {
-      if (event.data.requestId !== analysisRequestId.current) return;
+      if (event.data.requestId < minimumAnalysisRequestId.current) return;
       if (event.data.prepare) {
-        preparingEvaluation.current = false;
-        const pending = pendingAction.current;
+        const request = prepareRequests.current.get(event.data.requestId);
+        prepareRequests.current.delete(event.data.requestId);
+        if (!request) return;
+        const pending = request.pending;
         if (pending) {
-          setFeedback({ ...pending, evaluations: event.data.evaluations });
-          pendingAction.current = null;
-        } else preparedEvaluation.current = event.data.evaluations;
+          if (pending.handId === activeHandId.current && pending.actionId === latestActionId.current) {
+            setFeedback({ action: pending.action, handNumber: pending.handNumber, evaluations: event.data.evaluations });
+          }
+          recordWorkerDecision(event.data.evaluations, pending.action, pending.pendingId);
+        } else if (request.handId === activeHandId.current) {
+          preparedEvaluation.current = { handId: request.handId, evaluations: event.data.evaluations };
+        }
       }
-      else setFeedback(event.data);
+      else {
+        const request = actionRequests.current.get(event.data.requestId);
+        actionRequests.current.delete(event.data.requestId);
+        if (!request) return;
+        if (request.handId === activeHandId.current && request.actionId === latestActionId.current) setFeedback(event.data);
+        recordWorkerDecision(event.data.evaluations, event.data.action, request.pendingId);
+      }
     });
     analysisWorker.current = worker;
+    restored.pendingDecisions.forEach((pending) => {
+      analysisRequestId.current += 1;
+      actionRequests.current.set(analysisRequestId.current, {
+        action: pending.action,
+        handNumber: pending.handNumber,
+        actionId: -1,
+        handId: -1,
+        pendingId: pending.id,
+      });
+      worker.postMessage({ action: pending.action, game: pending.game, handNumber: pending.handNumber, requestId: analysisRequestId.current });
+    });
     return () => {
       worker.terminate();
       if (transitionTimer.current !== null) window.clearTimeout(transitionTimer.current);
       dealerTimers.current.forEach((timer) => window.clearTimeout(timer));
     };
   }, []);
+
+  function saveProgress(nextProgress: SessionProgress) {
+    progressRef.current = nextProgress;
+    setProgress(nextProgress);
+    window.localStorage.setItem(progressStorageKey, JSON.stringify(nextProgress));
+  }
+
+  function updateProgress(update: (current: SessionProgress) => SessionProgress) {
+    setProgress((current) => {
+      const nextProgress = update(current);
+      progressRef.current = nextProgress;
+      window.localStorage.setItem(progressStorageKey, JSON.stringify(nextProgress));
+      return nextProgress;
+    });
+  }
+
+  function recordDecision(evaluations: readonly MoveEvaluation[], action: PlayerAction) {
+    const selected = evaluations.find((evaluation) => evaluation.action === action);
+    if (!selected) return;
+    updateProgress((current) => ({
+      ...current,
+      decisions: current.decisions + 1,
+      correctDecisions: current.correctDecisions + (selected.grade === "Best move" ? 1 : 0),
+    }));
+  }
+
+  function recordCompletedGame(completedGame: GameState) {
+    if (completedGame.phase !== "complete") return;
+    updateProgress((current) => completedGame.settlements.reduce<SessionProgress>((next, settlement) => ({
+      ...next,
+      hands: next.hands + 1,
+      wins: next.wins + (settlement.result === "win" || settlement.result === "blackjack" ? 1 : 0),
+      losses: next.losses + (settlement.result === "loss" ? 1 : 0),
+      pushes: next.pushes + (settlement.result === "push" ? 1 : 0),
+    }), current));
+  }
+
+  function archiveSession() {
+    const archive = JSON.parse(window.localStorage.getItem(archiveStorageKey) ?? "[]") as unknown[];
+    archive.push({ archivedAt: new Date().toISOString(), game, rules, progress: progressRef.current });
+    window.localStorage.setItem(archiveStorageKey, JSON.stringify(archive));
+  }
+
+  function clearTable() {
+    dealerTimers.current.forEach((timer) => window.clearTimeout(timer));
+    if (transitionTimer.current !== null) window.clearTimeout(transitionTimer.current);
+    analysisRequestId.current += 1;
+    minimumAnalysisRequestId.current = analysisRequestId.current;
+    activeHandId.current += 1;
+    latestActionId.current = 0;
+    actionRequests.current.clear();
+    prepareRequests.current.clear();
+    preparedEvaluation.current = null;
+    setGame(null);
+    setFeedback(null);
+    setClearing(false);
+    setDealerPlaying(false);
+    setOpeningDeal(false);
+    setTransitioning(false);
+    setHandPage(0);
+    setVisibleDealerCount(2);
+  }
 
   function startTransition(duration = 450, onComplete?: () => void) {
     if (reducedMotion) {
@@ -113,15 +249,17 @@ export function GameTable() {
         : game?.shoe ?? newShoe.current ?? createShoe(rules.deckCount);
       const nextGame = createGame(shoe, rules);
       newShoe.current = nextGame.shoe;
+      recordCompletedGame(nextGame);
       analysisRequestId.current += 1;
+      activeHandId.current += 1;
+      const handId = activeHandId.current;
+      latestActionId.current = 0;
       preparedEvaluation.current = null;
-      pendingAction.current = null;
-      preparingEvaluation.current = false;
       setOpeningDeal(true);
       startTransition(850, () => {
         setOpeningDeal(false);
         if (!availableActions(nextGame).includes("split")) {
-          preparingEvaluation.current = true;
+          prepareRequests.current.set(analysisRequestId.current, { handId });
           analysisWorker.current?.postMessage({ action: "hit", game: nextGame, handNumber: 1, requestId: analysisRequestId.current, prepare: true });
         }
       });
@@ -142,20 +280,35 @@ export function GameTable() {
   function act(action: PlayerAction) {
     if (game && !transitioning) {
       const handNumber = game.activeHandIndex + 1;
+      const handId = activeHandId.current;
+      const actionId = latestActionId.current + 1;
+      latestActionId.current = actionId;
       setFeedback({ action, evaluations: [], handNumber });
       const prepared = preparedEvaluation.current;
       preparedEvaluation.current = null;
-      if (prepared) {
-        setFeedback({ action, evaluations: prepared, handNumber });
-      } else if (preparingEvaluation.current) {
-        pendingAction.current = { action, handNumber };
+      if (prepared?.handId === handId) {
+        setFeedback({ action, evaluations: prepared.evaluations, handNumber });
+        recordDecision(prepared.evaluations, action);
       } else {
-        analysisRequestId.current += 1;
-        analysisWorker.current?.postMessage({ action, game, handNumber, requestId: analysisRequestId.current });
+        const preparing = [...prepareRequests.current.entries()].find(([, request]) => request.handId === handId && !request.pending);
+        const pendingId = window.crypto.randomUUID();
+        const pending = { action, handNumber, actionId, handId, pendingId };
+        updateProgress((current) => ({
+          ...current,
+          pendingDecisions: [...current.pendingDecisions, { id: pendingId, action, game, handNumber }],
+        }));
+        if (preparing) {
+          prepareRequests.current.set(preparing[0], { handId, pending });
+        } else {
+          analysisRequestId.current += 1;
+          actionRequests.current.set(analysisRequestId.current, pending);
+          analysisWorker.current?.postMessage({ action, game, handNumber, requestId: analysisRequestId.current });
+        }
       }
       startTransition();
       const nextGame = applyAction(game, action);
       newShoe.current = nextGame.shoe;
+      if (game.phase !== "complete" && nextGame.phase === "complete") recordCompletedGame(nextGame);
       setGame(nextGame);
       if (nextGame.phase === "player") {
         setHandPage(Math.floor(nextGame.activeHandIndex / (phoneLayout ? 1 : 2)));
@@ -205,36 +358,53 @@ export function GameTable() {
     setOptionsOpen(true);
   }
 
-  function applyOptions() {
-    const archive = JSON.parse(window.localStorage.getItem("twentyone-session-archive") ?? "[]") as unknown[];
-    archive.push({ archivedAt: new Date().toISOString(), game, rules });
-    window.localStorage.setItem("twentyone-session-archive", JSON.stringify(archive));
-    dealerTimers.current.forEach((timer) => window.clearTimeout(timer));
-    if (transitionTimer.current !== null) window.clearTimeout(transitionTimer.current);
-    analysisRequestId.current += 1;
-    preparedEvaluation.current = null;
-    pendingAction.current = null;
-    preparingEvaluation.current = false;
-    newShoe.current = createShoe(draftRules.deckCount);
-    setRules(draftRules);
-    setGame(null);
+  function afterPendingDecisions(finish: () => void) {
     setFeedback(null);
-    setClearing(false);
-    setDealerPlaying(false);
-    setOpeningDeal(false);
-    setTransitioning(false);
-    setHandPage(0);
-    setVisibleDealerCount(2);
-    setArchiveNotice("Session archived. New shoe ready.");
-    setOptionsOpen(false);
+    if (progressRef.current.pendingDecisions.length === 0) finish();
+    else pendingBoundary.current = finish;
   }
+
+  function applyOptions() {
+    const nextRules = draftRules;
+    setOptionsOpen(false);
+    afterPendingDecisions(() => {
+      archiveSession();
+      newShoe.current = createShoe(nextRules.deckCount);
+      setRules(nextRules);
+      saveProgress(emptyProgress);
+      clearTable();
+      setArchiveNotice("Session archived. New shoe ready.");
+    });
+  }
+
+  function resetSession() {
+    afterPendingDecisions(() => {
+      archiveSession();
+      saveProgress(emptyProgress);
+      newShoe.current = createShoe(rules.deckCount);
+      clearTable();
+      setArchiveNotice("Session archived. Progress reset.");
+    });
+  }
+
+  const correctMovePercentage = progress.decisions === 0
+    ? 0
+    : Math.round((progress.correctDecisions / progress.decisions) * 100);
 
   return <main className="app-shell">
     <header className="topbar">
       <a className="brand" href="#table" aria-label="Twentyone home"><span className="brand-chip" aria-hidden="true">21</span><span>Twentyone</span></a>
-      <div className="session-stats" aria-label="Session summary"><span><b>0</b> hands</span><span><b>0%</b> accuracy</span></div>
+      <span />
       <button className="icon-button" type="button" aria-label="Table options" onClick={openOptions}>⚙</button>
     </header>
+    <section className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-b border-[#ffffff12] py-3 text-[11px] tracking-[.08em] text-[#9db4a9] uppercase" aria-label="Session progress" role="region">
+      <span>Hands <b className="text-sm text-[#f3e7ca]">{progress.hands}</b></span>
+      <span>Wins <b className="text-sm text-[#8de0b7]">{progress.wins}</b></span>
+      <span>Losses <b className="text-sm text-[#f0958d]">{progress.losses}</b></span>
+      <span>Pushes <b className="text-sm text-[#e8d496]">{progress.pushes}</b></span>
+      <span>Correct moves <b className="text-sm text-[#f3e7ca]">{correctMovePercentage}%</b></span>
+      <button className="rounded-full border border-[#ffffff24] px-3 py-1 text-[10px] font-bold text-[#d8e1dc] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#f5d47e]" type="button" onClick={resetSession}>Reset session</button>
+    </section>
     {archiveNotice && <p className="mt-3 mb-[-8px] text-center text-[13px] text-[#8de0b7]" role="status">{archiveNotice}</p>}
     <div className="game-layout">
     <section id="table" className="casino-table" aria-label="Blackjack table" data-dealer-state={dealerPlaying ? "playing" : "done"} data-game-state={clearing ? "clearing" : game ? "playing" : "idle"} data-motion={reducedMotion ? "reduced" : "standard"}>

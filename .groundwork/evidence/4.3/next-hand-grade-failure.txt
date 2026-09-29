@@ -1,0 +1,12 @@
+Command: npx playwright test tests/e2e/session-progress.spec.ts --grep "pending grade" --config .playwright-3200.config.ts
+Summary: 1 failed
+
+The temporary config ran Twentyone on isolated port 3200.
+
+Stand completed the first hand.
+Deal next hand started before the Stand grade finished.
+The new hand stayed visible and stale analysis stayed hidden.
+Expected stored totals: 1 decision and 0 correct decisions.
+Received stored totals: 0 decisions and 0 correct decisions after 15 seconds.
+
+Failure location: tests/e2e/session-progress.spec.ts:86

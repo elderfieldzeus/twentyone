@@ -1,0 +1,11 @@
+Command: npx playwright test tests/e2e/session-progress.spec.ts --grep "fast consecutive" --config .playwright-3200.config.ts
+Summary: 1 failed
+
+The temporary config ran Twentyone on isolated port 3200.
+
+The deterministic Hit is a Best move.
+The immediate Stand is Not the best move.
+Expected: 2 decisions, 1 correct decision, and 50% correct moves.
+Received: 0% correct moves after the Stand grade appeared.
+
+Failure location: tests/e2e/session-progress.spec.ts:67

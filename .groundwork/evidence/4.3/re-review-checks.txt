@@ -1,0 +1,30 @@
+Command: npm run test:unit
+Summary: 6 unit test files passed with 36 tests.
+
+Command: npx playwright test --config .playwright-review.config.ts
+Summary: 32 browser tests passed in 1.2 minutes against isolated port 3200.
+
+Command: npm run lint
+Summary: ESLint passed with no errors.
+
+Command: npm run build
+Summary: Next.js production build passed.
+
+Live fast Hit then Stand check: passed.
+Stored progress contained 2 decisions and 1 correct decision.
+The interface showed 50 percent and kept the latest Stand feedback visible.
+
+Live next-hand check: failed.
+The user selected Stand and dealt the next hand before its grade finished.
+After six seconds, stored progress still contained 0 decisions.
+Starting the next hand invalidated the pending grade.
+
+Live desktop and mobile checks
+Summary: Result counters, reload persistence, archive, and reset passed.
+A natural blackjack counted once as one hand and one win.
+A completed split counted once as two hands and two results.
+The split progress survived reload and reset archived all counters.
+
+Decision and lesson check: passed.
+The diff complies with decisions 0001, 0002, 0004, and 0005.
+LESSONS.md contains no project lessons to apply.

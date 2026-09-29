@@ -1,0 +1,13 @@
+Command: npx playwright test tests/e2e/session-progress.spec.ts --config .playwright-3200.config.ts
+Summary: 5 failed
+
+The temporary config ran Twentyone on isolated port 3200.
+Another project occupied the configured port 3100.
+
+1. The current session counter region is missing.
+2. A completed loss has no Hands or Losses update.
+3. A graded move has no Correct moves update.
+4. Current progress is unavailable before or after reload.
+5. Current progress and its Reset session control are missing.
+
+All failures occurred because session progress is not implemented.
