@@ -31,3 +31,10 @@
 - **Decisions:** no new stack decisions.
 - **Calls:** use semantic regions, stable browser fixtures, system motion settings, fixed hand pages, private hole-card values, and delayed results.
 - **Lessons added:** none.
+
+## Phase 4: Visible move guidance (2026-09-29)
+- **Shipped:** post-move analysis, table options, and persistent session progress ([4.1](cards/4.1-move-analysis-panel.md), [4.2](cards/4.2-table-options.md), [4.3](cards/4.3-session-progress.md)).
+- **Try it:** run `npm run dev`, play a hand, change table options, and inspect the progress counters.
+- **Decisions:** standard moves stay exact, while Split uses a labeled estimate ([0005](decisions/0005-exact-split-analysis.md)).
+- **Calls:** analysis runs off the interface thread, browser checks run serially, and pending grades settle exactly once across session boundaries.
+- **Lessons added:** none.

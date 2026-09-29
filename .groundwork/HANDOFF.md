@@ -3,11 +3,11 @@
 <!-- The current state, overwritten (not appended) at every role change and before stopping.
      A fresh session, in any tool or model, should be able to continue from this file plus the current card. -->
 
-- **Phase:** 4 of 5, Visible move guidance
+- **Phase:** 5 of 5, Learning history
 - **Current card:** none
-- **Status:** Phase 4 is waiting for human review
-- **Last step:** Card 4.3 passed final review and all pending-grade boundaries
-- **Next step:** review Phase 4, then approve or reject it
+- **Status:** Phase 4 approved on 2026-09-29
+- **Last step:** Phase 4 passed human review
+- **Next step:** start card 5.1
 - **Failing checks:** none
 - **Notes:** Only the covered card back exists before dealer reveal. Results wait for the dealer reveal and all dealer hits.
 - **Notes:** Keep the large center suit visible on mobile. Keep desktop cards unchanged.
