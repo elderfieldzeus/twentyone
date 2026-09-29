@@ -1,0 +1,23 @@
+Commands:
+- npm test
+- npm run lint
+- npm run build
+- npm run build -- --webpack
+- npx tsc --noEmit
+- npx playwright test tests/e2e/session-archive.spec.ts --project=chromium
+
+Summary:
+- Unit tests: 6 files passed, 36 tests passed.
+- Lint: passed with no warnings or errors.
+- TypeScript: passed.
+- Webpack production build: passed.
+- Default Turbopack build: not verified in this review environment.
+- Full and focused browser checks: not verified live in this review environment.
+- Browser server failed to bind to port 3100 with EPERM.
+- Build: failed because Turbopack could not bind a helper process to a port with EPERM.
+
+Review result:
+- The split action creates a second archive record beside the source hand.
+- Both records receive the split action after prepared or pending analysis.
+- Later actions, cards, and settlements use the matching current-game hand index.
+- Repeated splits insert the new record after the split source record.

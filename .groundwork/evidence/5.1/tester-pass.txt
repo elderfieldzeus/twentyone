@@ -1,0 +1,10 @@
+Command: npx playwright test tests/e2e/session-archive.spec.ts --project=chromium
+
+Summary: 5 passed (15.4s)
+
+Passed:
+- Archives a complete session summary, rules, hands, and time.
+- Saves cards, actions, grades, probabilities, and result for each hand.
+- Shows saved sessions after a page reload.
+- Deletes saved history only after confirmation.
+- Starts with an empty history when saved data is invalid.

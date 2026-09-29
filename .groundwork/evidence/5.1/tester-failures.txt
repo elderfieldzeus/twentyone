@@ -1,0 +1,22 @@
+Command: npx playwright test tests/e2e/session-archive.spec.ts --project=chromium
+
+Summary: 5 failed
+
+1. archives a complete session summary, rules, hands, and time
+   Expected summary and hands fields in the archived session.
+   Received only archivedAt, game, rules, and progress.
+
+2. saves cards, actions, grades, probabilities, and result for each hand
+   Expected the first saved hand to contain the complete learning record.
+   Received undefined because the archive has no hands list.
+
+3. shows saved sessions after a page reload
+   Expected a Session history button after reload.
+   The button does not exist.
+
+4. deletes saved history only after confirmation
+   Expected a Session history button before the confirmed delete flow.
+   The button does not exist.
+
+5. starts with an empty history when saved data is invalid
+   The table starts, but the expected Session history button does not exist.

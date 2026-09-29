@@ -34,6 +34,19 @@ type SessionProgress = Readonly<{
 
 type StoredPendingDecision = Readonly<{ id: string; action: PlayerAction; game: GameState; handNumber: number }>;
 type PendingDecision = Readonly<{ action: PlayerAction; handNumber: number; actionId: number; handId: number; pendingId: string }>;
+type ArchivedAction = { action: PlayerAction; grade: string; probabilities: MoveEvaluation["outcome"] };
+type ArchivedHand = {
+  playerCards: GameState["playerHands"][number]["cards"];
+  dealerCards: GameState["dealer"]["cards"];
+  actions: ArchivedAction[];
+  result?: "blackjack" | "win" | "push" | "loss";
+};
+type ArchivedSession = Readonly<{
+  archivedAt: string;
+  summary: Omit<SessionProgress, "pendingDecisions">;
+  rules: TableRules;
+  hands: readonly ArchivedHand[];
+}>;
 
 const emptyProgress: SessionProgress = { hands: 0, wins: 0, losses: 0, pushes: 0, decisions: 0, correctDecisions: 0, pendingDecisions: [] };
 const progressStorageKey = "twentyone-session-progress";
@@ -64,9 +77,15 @@ export function GameTable() {
   const [draftRules, setDraftRules] = useState<TableRules>(defaultRules);
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [archiveNotice, setArchiveNotice] = useState("");
+  const [archive, setArchive] = useState<ArchivedSession[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [deleteHistoryOpen, setDeleteHistoryOpen] = useState(false);
   const [progress, setProgress] = useState<SessionProgress>(emptyProgress);
   const progressRef = useRef<SessionProgress>(emptyProgress);
   const pendingBoundary = useRef<(() => void) | null>(null);
+  const sessionHands = useRef<ArchivedHand[]>([]);
+  const currentGameHands = useRef<ArchivedHand[]>([]);
+  const decisionHands = useRef(new Map<string, ArchivedHand[]>());
   const [game, setGame] = useState<GameState | null>(null);
   const [clearing, setClearing] = useState(false);
   const [dealerPlaying, setDealerPlaying] = useState(false);
@@ -90,6 +109,15 @@ export function GameTable() {
   const phoneLayout = useSyncExternalStore(subscribeToPhoneLayout, getPhoneLayout, () => false);
 
   useEffect(() => {
+    const storedArchive = window.localStorage.getItem(archiveStorageKey);
+    if (storedArchive) {
+      try {
+        const parsed = JSON.parse(storedArchive) as unknown;
+        if (Array.isArray(parsed)) queueMicrotask(() => setArchive(parsed as ArchivedSession[]));
+      } catch {
+        window.localStorage.removeItem(archiveStorageKey);
+      }
+    }
     const storedProgress = window.localStorage.getItem(progressStorageKey);
     const restored = storedProgress
       ? { ...emptyProgress, ...(JSON.parse(storedProgress) as Partial<SessionProgress>) }
@@ -100,6 +128,11 @@ export function GameTable() {
     function recordWorkerDecision(evaluations: readonly MoveEvaluation[], action: PlayerAction, pendingId: string) {
       const selected = evaluations.find((evaluation) => evaluation.action === action);
       if (!selected) return;
+      const archivedHands = decisionHands.current.get(pendingId);
+      if (archivedHands) {
+        archivedHands.forEach((archivedHand) => archivedHand.actions.push({ action, grade: selected.grade, probabilities: selected.outcome }));
+        decisionHands.current.delete(pendingId);
+      }
       setProgress((current) => {
         const nextProgress = {
           ...current,
@@ -187,8 +220,20 @@ export function GameTable() {
     }));
   }
 
+  function recordArchivedDecision(archivedHand: ArchivedHand, evaluations: readonly MoveEvaluation[], action: PlayerAction) {
+    const selected = evaluations.find((evaluation) => evaluation.action === action);
+    if (selected) archivedHand.actions.push({ action, grade: selected.grade, probabilities: selected.outcome });
+  }
+
   function recordCompletedGame(completedGame: GameState) {
     if (completedGame.phase !== "complete") return;
+    completedGame.settlements.forEach((settlement, index) => {
+      const archivedHand = currentGameHands.current[index];
+      if (archivedHand) {
+        archivedHand.dealerCards = completedGame.dealer.cards;
+        archivedHand.result = settlement.result;
+      }
+    });
     updateProgress((current) => completedGame.settlements.reduce<SessionProgress>((next, settlement) => ({
       ...next,
       hands: next.hands + 1,
@@ -199,9 +244,15 @@ export function GameTable() {
   }
 
   function archiveSession() {
-    const archive = JSON.parse(window.localStorage.getItem(archiveStorageKey) ?? "[]") as unknown[];
-    archive.push({ archivedAt: new Date().toISOString(), game, rules, progress: progressRef.current });
-    window.localStorage.setItem(archiveStorageKey, JSON.stringify(archive));
+    const { hands, wins, losses, pushes, decisions, correctDecisions } = progressRef.current;
+    const summary = { hands, wins, losses, pushes, decisions, correctDecisions };
+    const savedSession = { archivedAt: new Date().toISOString(), summary, rules, hands: sessionHands.current };
+    const nextArchive = [...archive, savedSession];
+    setArchive(nextArchive);
+    window.localStorage.setItem(archiveStorageKey, JSON.stringify(nextArchive));
+    sessionHands.current = [];
+    currentGameHands.current = [];
+    decisionHands.current.clear();
   }
 
   function clearTable() {
@@ -248,6 +299,12 @@ export function GameTable() {
         ? createShoe(rules.deckCount)
         : game?.shoe ?? newShoe.current ?? createShoe(rules.deckCount);
       const nextGame = createGame(shoe, rules);
+      currentGameHands.current = nextGame.playerHands.map((hand) => ({
+        playerCards: hand.cards,
+        dealerCards: nextGame.dealer.cards,
+        actions: [],
+      }));
+      sessionHands.current.push(...currentGameHands.current);
       newShoe.current = nextGame.shoe;
       recordCompletedGame(nextGame);
       analysisRequestId.current += 1;
@@ -282,6 +339,8 @@ export function GameTable() {
       const handNumber = game.activeHandIndex + 1;
       const handId = activeHandId.current;
       const actionId = latestActionId.current + 1;
+      const archivedHand = currentGameHands.current[game.activeHandIndex];
+      const archivedHands = archivedHand ? [archivedHand] : [];
       latestActionId.current = actionId;
       setFeedback({ action, evaluations: [], handNumber });
       const prepared = preparedEvaluation.current;
@@ -289,10 +348,12 @@ export function GameTable() {
       if (prepared?.handId === handId) {
         setFeedback({ action, evaluations: prepared.evaluations, handNumber });
         recordDecision(prepared.evaluations, action);
+        if (archivedHand) recordArchivedDecision(archivedHand, prepared.evaluations, action);
       } else {
         const preparing = [...prepareRequests.current.entries()].find(([, request]) => request.handId === handId && !request.pending);
         const pendingId = window.crypto.randomUUID();
         const pending = { action, handNumber, actionId, handId, pendingId };
+        if (archivedHand) decisionHands.current.set(pendingId, archivedHands);
         updateProgress((current) => ({
           ...current,
           pendingDecisions: [...current.pendingDecisions, { id: pendingId, action, game, handNumber }],
@@ -307,6 +368,20 @@ export function GameTable() {
       }
       startTransition();
       const nextGame = applyAction(game, action);
+      if (action === "split" && archivedHand) {
+        archivedHand.playerCards = nextGame.playerHands[game.activeHandIndex]?.cards ?? archivedHand.playerCards;
+        const rightHand: ArchivedHand = {
+          playerCards: nextGame.playerHands[game.activeHandIndex + 1]?.cards ?? [],
+          dealerCards: nextGame.dealer.cards,
+          actions: [...archivedHand.actions],
+        };
+        currentGameHands.current.splice(game.activeHandIndex + 1, 0, rightHand);
+        const sessionIndex = sessionHands.current.indexOf(archivedHand);
+        sessionHands.current.splice(sessionIndex + 1, 0, rightHand);
+        archivedHands.push(rightHand);
+      } else if (archivedHand) {
+        archivedHand.playerCards = nextGame.playerHands[game.activeHandIndex]?.cards ?? archivedHand.playerCards;
+      }
       newShoe.current = nextGame.shoe;
       if (game.phase !== "complete" && nextGame.phase === "complete") recordCompletedGame(nextGame);
       setGame(nextGame);
@@ -387,6 +462,12 @@ export function GameTable() {
     });
   }
 
+  function deleteHistory() {
+    window.localStorage.removeItem(archiveStorageKey);
+    setArchive([]);
+    setDeleteHistoryOpen(false);
+  }
+
   const correctMovePercentage = progress.decisions === 0
     ? 0
     : Math.round((progress.correctDecisions / progress.decisions) * 100);
@@ -404,7 +485,12 @@ export function GameTable() {
       <span>Pushes <b className="text-sm text-[#e8d496]">{progress.pushes}</b></span>
       <span>Correct moves <b className="text-sm text-[#f3e7ca]">{correctMovePercentage}%</b></span>
       <button className="rounded-full border border-[#ffffff24] px-3 py-1 text-[10px] font-bold text-[#d8e1dc] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#f5d47e]" type="button" onClick={resetSession}>Reset session</button>
+      <button className="rounded-full border border-[#ffffff24] px-3 py-1 text-[10px] font-bold text-[#d8e1dc] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#f5d47e]" type="button" onClick={() => setHistoryOpen((open) => !open)}>Session history</button>
     </section>
+    {historyOpen && <section className="mx-auto mt-4 w-[min(1120px,calc(100%-32px))] rounded-xl border border-[#ffffff24] bg-[#101a16] p-5" aria-label="Session history" role="region">
+      <div className="flex items-center justify-between gap-4"><h2 className="font-serif text-2xl">Session history</h2>{archive.length > 0 && <button className="rounded-full border border-[#ffffff24] px-3 py-1 text-sm" type="button" onClick={() => setDeleteHistoryOpen(true)}>Delete history</button>}</div>
+      {archive.length === 0 ? <p className="mt-3 text-[#b9c9c1]">No saved sessions</p> : <ol className="mt-3 grid gap-3">{archive.map((session) => <li className="rounded-lg bg-[#ffffff08] p-3" key={session.archivedAt}><time dateTime={session.archivedAt}>{new Date(session.archivedAt).toLocaleString()}</time><p>{session.summary.hands} {session.summary.hands === 1 ? "hand" : "hands"} · {session.summary.losses} {session.summary.losses === 1 ? "loss" : "losses"} · {session.summary.wins} {session.summary.wins === 1 ? "win" : "wins"}</p></li>)}</ol>}
+    </section>}
     {archiveNotice && <p className="mt-3 mb-[-8px] text-center text-[13px] text-[#8de0b7]" role="status">{archiveNotice}</p>}
     <div className="game-layout">
     <section id="table" className="casino-table" aria-label="Blackjack table" data-dealer-state={dealerPlaying ? "playing" : "done"} data-game-state={clearing ? "clearing" : game ? "playing" : "idle"} data-motion={reducedMotion ? "reduced" : "standard"}>
@@ -553,5 +639,6 @@ export function GameTable() {
         </section>
       </div>
     )}
+    {deleteHistoryOpen && <div className="fixed inset-0 z-30 grid place-items-center bg-[#020805c7] p-5"><section className="w-full max-w-md rounded-[18px] border border-[#d8ba6f66] bg-[#101a16] p-6" role="dialog" aria-label="Delete saved history" aria-modal="true"><h2 className="font-serif text-2xl">Delete saved history</h2><p className="mt-3 text-[#b9c9c1]">This removes all saved sessions from this browser.</p><div className="mt-6 flex justify-end gap-3"><button className="rounded-full border border-[#ffffff24] px-4 py-2" type="button" onClick={() => setDeleteHistoryOpen(false)}>Cancel</button><button className="rounded-full border border-[#d8ba6f] bg-[#d5ad5f] px-4 py-2 font-bold text-[#1c160b]" type="button" onClick={deleteHistory}>Delete history</button></div></section></div>}
   </main>;
 }

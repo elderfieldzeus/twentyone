@@ -5,9 +5,9 @@
 
 - **Phase:** 5 of 5, Learning history
 - **Current card:** none
-- **Status:** Phase 4 approved on 2026-09-29
-- **Last step:** Phase 4 passed human review
-- **Next step:** start card 5.1
+- **Status:** Card 5.1 passed review and is done
+- **Last step:** Reviewer verified separate split-hand archive records; unit, lint, TypeScript, and Webpack build checks passed
+- **Next step:** start card 5.2
 - **Failing checks:** none
 - **Notes:** Only the covered card back exists before dealer reveal. Results wait for the dealer reveal and all dealer hits.
 - **Notes:** Keep the large center suit visible on mobile. Keep desktop cards unchanged.
@@ -30,3 +30,7 @@
 - **Notes:** Fast Hit then Stand records 2 decisions, 1 correct decision, and 50% accuracy.
 - **Notes:** A pending prior-hand grade updates stored progress exactly once and cannot restore old feedback after the next hand starts.
 - **Notes:** Reload recovers pending grades without feedback. Reset and Apply options settle pending grades into the archive before zeroing progress.
+- **Notes:** Card 5.1 tests use a Session history button and region, plus separate summary and hands archive fields.
+- **Notes:** Saved-card checks allow complete arrays while requiring the expected card and action entries.
+- **Notes:** Unit checks pass: 6 files and 36 tests. Lint has no errors and one warning.
+- **Notes:** Card 5.1 browser checks and the default Turbopack build remain unverified because the environment blocked port binding with EPERM.
