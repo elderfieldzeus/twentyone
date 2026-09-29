@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { createShoe } from "@/lib/blackjack/cards";
-import { applyAction, availableActions, createGame, defaultRules, type GameState, type PlayerAction } from "@/lib/blackjack/game";
+import { applyAction, availableActions, createGame, defaultRules, type GameState, type PlayerAction, type TableRules } from "@/lib/blackjack/game";
 import { scoreHand } from "@/lib/blackjack/hand";
 import { formatOutcome, type MoveEvaluation } from "@/lib/blackjack/evaluate";
 
@@ -43,6 +43,10 @@ function getPhoneLayout() {
 }
 
 export function GameTable() {
+  const [rules, setRules] = useState<TableRules>(defaultRules);
+  const [draftRules, setDraftRules] = useState<TableRules>(defaultRules);
+  const [optionsOpen, setOptionsOpen] = useState(false);
+  const [archiveNotice, setArchiveNotice] = useState("");
   const [game, setGame] = useState<GameState | null>(null);
   const [clearing, setClearing] = useState(false);
   const [dealerPlaying, setDealerPlaying] = useState(false);
@@ -58,6 +62,7 @@ export function GameTable() {
   const preparedEvaluation = useRef<MoveEvaluation[] | null>(null);
   const preparingEvaluation = useRef(false);
   const pendingAction = useRef<{ action: PlayerAction; handNumber: number } | null>(null);
+  const newShoe = useRef<ReturnType<typeof createShoe> | null>(null);
   const reducedMotion = useSyncExternalStore(subscribeToReducedMotion, getReducedMotion, () => false);
   const phoneLayout = useSyncExternalStore(subscribeToPhoneLayout, getPhoneLayout, () => false);
 
@@ -103,7 +108,11 @@ export function GameTable() {
       setHandPage(0);
       setVisibleDealerCount(2);
       setFeedback(null);
-      const nextGame = createGame(createShoe(defaultRules.deckCount), defaultRules);
+      const shoe = rules.shuffleAfterEachHand
+        ? createShoe(rules.deckCount)
+        : game?.shoe ?? newShoe.current ?? createShoe(rules.deckCount);
+      const nextGame = createGame(shoe, rules);
+      newShoe.current = nextGame.shoe;
       analysisRequestId.current += 1;
       preparedEvaluation.current = null;
       pendingAction.current = null;
@@ -146,6 +155,7 @@ export function GameTable() {
       }
       startTransition();
       const nextGame = applyAction(game, action);
+      newShoe.current = nextGame.shoe;
       setGame(nextGame);
       if (nextGame.phase === "player") {
         setHandPage(Math.floor(nextGame.activeHandIndex / (phoneLayout ? 1 : 2)));
@@ -190,7 +200,43 @@ export function GameTable() {
     ? `Hand ${firstVisibleHand + 1} of ${handCount}`
     : `Hands ${firstVisibleHand + 1}-${lastVisibleHand} of ${handCount}`;
 
-  return <>
+  function openOptions() {
+    setDraftRules(rules);
+    setOptionsOpen(true);
+  }
+
+  function applyOptions() {
+    const archive = JSON.parse(window.localStorage.getItem("twentyone-session-archive") ?? "[]") as unknown[];
+    archive.push({ archivedAt: new Date().toISOString(), game, rules });
+    window.localStorage.setItem("twentyone-session-archive", JSON.stringify(archive));
+    dealerTimers.current.forEach((timer) => window.clearTimeout(timer));
+    if (transitionTimer.current !== null) window.clearTimeout(transitionTimer.current);
+    analysisRequestId.current += 1;
+    preparedEvaluation.current = null;
+    pendingAction.current = null;
+    preparingEvaluation.current = false;
+    newShoe.current = createShoe(draftRules.deckCount);
+    setRules(draftRules);
+    setGame(null);
+    setFeedback(null);
+    setClearing(false);
+    setDealerPlaying(false);
+    setOpeningDeal(false);
+    setTransitioning(false);
+    setHandPage(0);
+    setVisibleDealerCount(2);
+    setArchiveNotice("Session archived. New shoe ready.");
+    setOptionsOpen(false);
+  }
+
+  return <main className="app-shell">
+    <header className="topbar">
+      <a className="brand" href="#table" aria-label="Twentyone home"><span className="brand-chip" aria-hidden="true">21</span><span>Twentyone</span></a>
+      <div className="session-stats" aria-label="Session summary"><span><b>0</b> hands</span><span><b>0%</b> accuracy</span></div>
+      <button className="icon-button" type="button" aria-label="Table options" onClick={openOptions}>⚙</button>
+    </header>
+    {archiveNotice && <p className="mt-3 mb-[-8px] text-center text-[13px] text-[#8de0b7]" role="status">{archiveNotice}</p>}
+    <div className="game-layout">
     <section id="table" className="casino-table" aria-label="Blackjack table" data-dealer-state={dealerPlaying ? "playing" : "done"} data-game-state={clearing ? "clearing" : game ? "playing" : "idle"} data-motion={reducedMotion ? "reduced" : "standard"}>
       <div className="table-rim" aria-hidden="true" />
       <div className="table-content">
@@ -204,7 +250,7 @@ export function GameTable() {
             </AnimatePresence>
           </div>
         </section>
-        <div className="table-mark" aria-hidden="true"><span>Blackjack pays 3 to 2</span><b>Dealer stands on soft 17</b></div>
+        <div className="table-mark" aria-hidden="true"><span>Blackjack pays {rules.blackjackPayout === "3:2" ? "3 to 2" : "6 to 5"}</span><b>Dealer {rules.dealerStandsOnSoft17 ? "stands" : "hits"} on soft 17</b></div>
         <section className="seat player-seat" aria-labelledby="player-title">
           <div className="hand-carousel">
             <div className="player-hands-window">
@@ -313,8 +359,29 @@ export function GameTable() {
             })}
           </div>
         </div>
-        <div className="panel-rule"><span>Table rules</span><strong>6 decks · S17</strong></div>
+        <div className="panel-rule"><span>Table rules</span><strong>{rules.deckCount} {rules.deckCount === 1 ? "deck" : "decks"} · {rules.dealerStandsOnSoft17 ? "S17" : "H17"} · {rules.dealerHasHoleCard ? "Hole card" : "No hole card"}</strong></div>
       </aside>
     )}
-  </>;
+    </div>
+    {optionsOpen && (
+      <div className="fixed inset-0 z-20 grid place-items-center bg-[#020805c7] p-5" onMouseDown={(event) => event.target === event.currentTarget && setOptionsOpen(false)}>
+        <section className="max-h-[calc(100vh-40px)] w-full max-w-[620px] overflow-auto rounded-[18px] border border-[#d8ba6f66] bg-[#101a16] p-[26px] shadow-[0_28px_90px_#000b] max-[820px]:p-[22px_18px]" role="dialog" aria-label="Table options" aria-modal="true">
+          <div className="mb-[22px] flex items-start justify-between"><div><p className="eyebrow">Game setup</p><h2 className="mt-1 mb-0 font-serif text-[28px] font-medium">Table options</h2></div><button className="h-[38px] w-[38px] rounded-full border border-[#ffffff24] bg-transparent text-2xl text-[#d8e1dc] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#f5d47e]" type="button" aria-label="Close table options" onClick={() => setOptionsOpen(false)}>×</button></div>
+          <div className="grid grid-cols-2 gap-4 max-[820px]:grid-cols-1">
+            <label className="grid gap-[7px] text-xs text-[#b9c9c1]">Deck count<select className="w-full rounded-lg border border-[#ffffff24] bg-[#172720] px-3 py-[11px] text-[#f7f0df] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#f5d47e]" value={draftRules.deckCount} onChange={(event) => setDraftRules({ ...draftRules, deckCount: Number(event.target.value) })}><option value="1">1</option><option value="2">2</option><option value="4">4</option><option value="6">6</option><option value="8">8</option></select></label>
+            <label className="grid gap-[7px] text-xs text-[#b9c9c1]">Soft 17<select className="w-full rounded-lg border border-[#ffffff24] bg-[#172720] px-3 py-[11px] text-[#f7f0df] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#f5d47e]" value={draftRules.dealerStandsOnSoft17 ? "stand" : "hit"} onChange={(event) => setDraftRules({ ...draftRules, dealerStandsOnSoft17: event.target.value === "stand" })}><option value="stand">Dealer stands</option><option value="hit">Dealer hits</option></select></label>
+            <label className="grid gap-[7px] text-xs text-[#b9c9c1]">Maximum split hands<select className="w-full rounded-lg border border-[#ffffff24] bg-[#172720] px-3 py-[11px] text-[#f7f0df] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#f5d47e]" value={draftRules.maxSplitHands} onChange={(event) => setDraftRules({ ...draftRules, maxSplitHands: Number(event.target.value) })}><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
+            <label className="grid gap-[7px] text-xs text-[#b9c9c1]">Blackjack payout<select className="w-full rounded-lg border border-[#ffffff24] bg-[#172720] px-3 py-[11px] text-[#f7f0df] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#f5d47e]" value={draftRules.blackjackPayout} onChange={(event) => setDraftRules({ ...draftRules, blackjackPayout: event.target.value as TableRules["blackjackPayout"] })}><option value="3:2">3:2</option><option value="6:5">6:5</option></select></label>
+          </div>
+          <div className="mt-[22px] grid grid-cols-2 gap-[14px] rounded-[10px] bg-[#ffffff06] p-[18px] max-[820px]:grid-cols-1">
+            <label className="flex items-center gap-[10px] text-[13px] text-[#d8e1dc]"><input className="h-[18px] w-[18px] accent-[#d5ad5f] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#f5d47e]" type="checkbox" checked={draftRules.shuffleAfterEachHand} onChange={(event) => setDraftRules({ ...draftRules, shuffleAfterEachHand: event.target.checked })} />Shuffle after each hand</label>
+            <label className="flex items-center gap-[10px] text-[13px] text-[#d8e1dc]"><input className="h-[18px] w-[18px] accent-[#d5ad5f] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#f5d47e]" type="checkbox" checked={draftRules.dealerHasHoleCard} onChange={(event) => setDraftRules({ ...draftRules, dealerHasHoleCard: event.target.checked })} />Dealer hole card</label>
+            <label className="flex items-center gap-[10px] text-[13px] text-[#d8e1dc]"><input className="h-[18px] w-[18px] accent-[#d5ad5f] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#f5d47e]" type="checkbox" checked={draftRules.doubleAfterSplit} onChange={(event) => setDraftRules({ ...draftRules, doubleAfterSplit: event.target.checked })} />Double after split</label>
+            <label className="flex items-center gap-[10px] text-[13px] text-[#d8e1dc]"><input className="h-[18px] w-[18px] accent-[#d5ad5f] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#f5d47e]" type="checkbox" checked={draftRules.resplitAces} onChange={(event) => setDraftRules({ ...draftRules, resplitAces: event.target.checked })} />Repeated ace splits</label>
+          </div>
+          <div className="mt-6 flex justify-end gap-[10px]"><button className="rounded-full border border-[#d8ba6f] bg-transparent px-[18px] py-[11px] font-bold text-[#f4dfaa] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#f5d47e]" type="button" onClick={() => setOptionsOpen(false)}>Cancel</button><button className="rounded-full border border-[#d8ba6f] bg-[#d5ad5f] px-[18px] py-[11px] font-bold text-[#1c160b] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#f5d47e]" type="button" onClick={applyOptions}>Apply options</button></div>
+        </section>
+      </div>
+    )}
+  </main>;
 }

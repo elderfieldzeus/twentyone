@@ -5,9 +5,9 @@
 
 - **Phase:** 4 of 5, Visible move guidance
 - **Current card:** none
-- **Status:** Card 4.1 passed review and is ready for the runner commit
-- **Last step:** Final review passed all checks and live desktop and mobile verification
-- **Next step:** commit card 4.1, then continue with the next eligible Phase 4 card
+- **Status:** Card 4.2 passed review and is ready for the runner commit
+- **Last step:** Re-review passed all checks, live desktop and mobile verification, and decision 0002 compliance
+- **Next step:** commit card 4.2, then continue with the next eligible Phase 4 card
 - **Failing checks:** none
 - **Notes:** Only the covered card back exists before dealer reveal. Results wait for the dealer reveal and all dealer hits.
 - **Notes:** Keep the large center suit visible on mobile. Keep desktop cards unchanged.
@@ -21,3 +21,6 @@
 - **Notes:** Approximate split feedback appears in about 3 seconds. All focused card checks pass.
 - **Notes:** Analysis runs off the UI thread. Browser checks run serially for stable UI timing.
 - **Notes:** Mixed feedback completes within 15 seconds. Standard rows are exact. Split has a row-level estimate label.
+- **Notes:** Applying options stores the prior session locally, clears the table, and prepares a new shoe.
+- **Notes:** Disabling hand shuffling keeps the remaining shoe between hands.
+- **Notes:** Another project owns port 3100. Validation used isolated port 3200 without changing project config.

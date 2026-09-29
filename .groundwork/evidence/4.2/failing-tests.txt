@@ -1,0 +1,12 @@
+Command: npx playwright test tests/e2e/table-options.spec.ts
+Summary: 4 failed
+
+1. shows current shoe and dealer options before changes
+2. shows current split and payout options before changes
+3. archives the current session and clears the table when options change
+4. uses changed options for game play and move analysis
+
+All four checks failed while waiting for the Table options button.
+The options interface does not exist yet.
+
+Failure location: tests/e2e/table-options.spec.ts:4

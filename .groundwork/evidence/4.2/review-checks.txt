@@ -1,0 +1,24 @@
+Command: npm test
+Summary: 6 unit test files passed with 36 tests. 26 browser tests passed in 1.1 minutes.
+
+Command: npm run lint
+Summary: ESLint passed with no errors.
+
+Command: npm run build
+Summary: Next.js production build passed.
+
+Live checks: 1440 by 960 and 390 by 844 Chromium windows
+Summary: All five acceptance criteria passed in both layouts.
+All eight default values were clear before changes.
+The dialog fit both windows with no page overflow.
+Applying all eight non-default values stored one prior session and cleared the table.
+The archive contained the prior game and its six-deck rules.
+The next hand used one deck, no hole card, H17, and 6:5 payout.
+The move panel showed the new active rules.
+
+Decision check: failed.
+Card 4.2 adds responsive and visual states to app/globals.css.
+Accepted decision 0002 requires Tailwind utilities for these states.
+The card does not include a replacement decision.
+
+Lessons: LESSONS.md contains no project lessons to apply.
